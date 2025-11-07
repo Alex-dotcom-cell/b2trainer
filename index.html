@@ -1,632 +1,661 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>B2 Trainer — v8 Pro (Schreiben + Sprechen + TTS)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>B2 Trainer — v8 Pro (Schreiben + Sprechen + TTS)</title>
 
-  <!-- Tailwind quick CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    :root{
-      --bg:#f3f6fb; --card:#ffffff; --muted:#6b7280; --accent:#0254a6;
-      --success:#10b981; --danger:#ef4444;
-    }
-    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#0f172a;padding:20px;}
-    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(2,6,23,0.06);border:1px solid rgba(2,6,23,0.04);}
-    .btn-icon{width:2.25rem;height:2.25rem;display:inline-flex;align-items:center;justify-content:center;border-radius:9999px;}
-    pre{white-space:pre-wrap;word-break:break-word;}
-    .debug-panel{background:#071024;color:#b7f5c6;padding:10px;border-radius:8px;font-family:monospace;font-size:12px;max-height:240px;overflow:auto;}
-    .chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:13px;}
-  </style>
+  <style>
+    :root{
+      --bg:#f3f6fb; --card:#ffffff; --muted:#6b7280; --accent:#0254a6;
+      --success:#10b981; --danger:#ef4444;
+    }
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:#0f172a;padding:20px;}
+    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(2,6,23,0.06);border:1px solid rgba(2,6,23,0.04);}
+    .btn-icon{width:2.25rem;height:2.25rem;display:inline-flex;align-items:center;justify-content:center;border-radius:9999px;}
+    pre{white-space:pre-wrap;word-break:break-word;}
+    .debug-panel{background:#071024;color:#b7f5c6;padding:10px;border-radius:8px;font-family:monospace;font-size:12px;max-height:240px;overflow:auto;}
+    .chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:13px;}
+  </style>
 </head>
 <body>
 
-  <div id="root" class="max-w-6xl mx-auto"></div>
+  <div id="root" class="max-w-6xl mx-auto"></div>
 
-  <script type="text/babel">
-  const { useState, useEffect, useMemo, useCallback, useRef } = React;
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  /***** Config *****/
-  // NOTE: No API key here. Serverless function on Netlify must use ELEVENLABS_API_KEY
-  const PROXY_TTS_PATH = "/.netlify/functions/tts-proxy"; // Netlify function endpoint
+  <script type="text/babel">
+  const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-  /***** Data: Schreiben & Sprechen *****/
-  const SCHREIBEN_TOPICS = [
-    { id: 'produkt', ru: '1. Товар (дефект)', de: 'der neue Staubsauger' },
-    { id: 'service', ru: '2. Услуга (обслуживание)', de: 'Ihr Internetanschluss' },
-    { id: 'kurs', ru: '3. Курс/Школа (недостатки)', de: 'der Deutsch B2-Kurs' },
-    { id: 'reise', ru: '4. Путешествие/Отель (недостатки)', de: 'das gebuchte Hotelzimmer' },
-    { id: 'wohnung', ru: '5. Дефект в квартире', de: 'die Heizungsanlage in meiner Wohnung' },
-    { id: 'rechnung', ru: '6. Счет/Договор (ошибка)', de: 'meine letzte Rechnung' },
-    { id: 'transport', ru: '7. Транспорт (задержка/проблема)', de: 'die Bahnverbindung nach Berlin' },
-  ];
-  const PHRASES_DATA = {
-    greetings: [ { id: 101, text: "Sehr geehrte Damen und Herren,", ru: "Уважаемые дамы и господа,", tip:"Формальное обращение." } ],
-    issue_intro: [
-      { id: 201, text: "Ich schreibe Ihnen bezüglich [объект жалобы].", ru: "Я пишу Вам по поводу [объект жалобы].", tip:"bezüglich + Genitiv." },
-      { id: 202, text: "Ich beziehe mich auf unsere Bestellung/Vereinbarung vom [Дата].", ru: "Я ссылаюсь на наш заказ/договоренность от [Дата].", tip:"sich beziehen auf + Akk." }
-    ],
-    main_problem: [
-      { id: 301, text: "Leider muss ich Ihnen mitteilen, dass [объект жалобы] nicht der Beschreibung entspricht.", ru: "К сожалению, [объект жалобы] не соответствует описанию.", tip:"Придаточное с 'dass' — глагол в конце." },
-      { id: 302, text: "Der Hauptgrund für meine Beschwerde ist, dass es Mängel gibt.", ru: "Причина жалобы — наличие недостатков.", tip:"Mängel — мн. число." }
-    ],
-    problem_consequence: [
-      { id: 401, text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", ru: "Из-за этой проблемы я не смог выполнить работу как планировал.", tip:"Aufgrund + Genitiv." },
-      { id: 402, text: "Das hat bei mir zu großem Ärger und Unannehmlichkeiten geführt.", ru: "Это привело к большим неудобствам.", tip:"Устойчивые выражения." }
-    ],
-    evidence: [
-      { id: 501, text: "Ich habe Ihnen alle notwendigen Unterlagen in der Anlage beigefügt.", ru: "Я приложил все необходимые документы.", tip:"beifügen — Perfekt: habe beigefügt." },
-      { id: 502, text: "Ich möchte Sie bitten, die Angelegenheit innerhalb von 14 Tagen zu klären.", ru: "Прошу решить вопрос в течение 14 дней.", tip:"Infinitivkonstruktion mit 'zu'." }
-    ],
-    resolution_request: [
-      { id: 601, text: "Daher bitte ich Sie höflich um eine schnelle Lösung und um Ersatz.", ru: "Прошу срочного решения и замены.", tip:"Daher — следствие." },
-      { id: 602, text: "Falls dies nicht möglich ist, erwarte ich die volle Rückerstattung des Kaufpreises.", ru: "Если невозможно — ожидаю возврата средств.", tip:"Условное предложение." }
-    ],
-    closing_formula: [ { id: 701, text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine schnelle Klärung.", ru: "Благодарю за внимание и надеюсь на быстрое решение.", tip:"Заключительная формула." } ],
-    sign_off: [ { id: 801, text: "Mit freundlichen Grüßen,", ru: "С уважением,", tip:"Подпись." } ]
-  };
+  /***** Config *****/
+  // NOTE: No API key here. Serverless function on Netlify must use ELEVENLABS_API_KEY
+  const PROXY_TTS_PATH = "/.netlify/functions/tts-proxy"; // Netlify function endpoint
 
-  // Full Sprechen topics (6)
-  const SPRECHEN_SCENARIOS = [
-    {
-      id: 'thema1',
-      title_ru: 'Тема 1: Описание работодателя',
-      title_de: 'Thema 1: Arbeitgeber beschreiben',
-      dialogues: [
-        {
-          id: '1a',
-          title_ru: 'A. Международная IT-компания',
-          text_de: `A: Ich möchte über einen Arbeitgeber sprechen, bei dem ich gerne arbeiten würde – ein internationales IT-Unternehmen.
+  // НОВАЯ КОНСТАНТА: ID немецких голосов ElevenLabs (добавьте свои, если нужно)
+  const ELEVENLABS_VOICES = [
+    { id: 'default', name: 'Системный по умолчанию' },
+    { id: 'pNInz6obpgDQGcFmaJgB', name: 'Arnold (Мужской, хороший)' },
+    { id: 'D38f72gK6oGv8h4Q8zU4', name: 'Matilda (Женский, проф.)' },
+    { id: 'XrPZD6zV9oszg5ajI0Uu', name: 'Antoni (Мужской, глубокий)' },
+    { id: 'ThT5K76PjG3LhYhR9wD4', name: 'Freya (Женский, дружелюбный)' },
+  ];
+
+  /***** Data: Schreiben & Sprechen *****/
+  const SCHREIBEN_TOPICS = [
+    { id: 'produkt', ru: '1. Товар (дефект)', de: 'der neue Staubsauger' },
+    { id: 'service', ru: '2. Услуга (обслуживание)', de: 'Ihr Internetanschluss' },
+    { id: 'kurs', ru: '3. Курс/Школа (недостатки)', de: 'der Deutsch B2-Kurs' },
+    { id: 'reise', ru: '4. Путешествие/Отель (недостатки)', de: 'das gebuchte Hotelzimmer' },
+    { id: 'wohnung', ru: '5. Дефект в квартире', de: 'die Heizungsanlage in meiner Wohnung' },
+    { id: 'rechnung', ru: '6. Счет/Договор (ошибка)', de: 'meine letzte Rechnung' },
+    { id: 'transport', ru: '7. Транспорт (задержка/проблема)', de: 'die Bahnverbindung nach Berlin' },
+  ];
+  const PHRASES_DATA = {
+    greetings: [ { id: 101, text: "Sehr geehrte Damen und Herren,", ru: "Уважаемые дамы и господа,", tip:"Формальное обращение." } ],
+    issue_intro: [
+      { id: 201, text: "Ich schreibe Ihnen bezüglich [объект жалобы].", ru: "Я пишу Вам по поводу [объект жалобы].", tip:"bezüglich + Genitiv." },
+      { id: 202, text: "Ich beziehe mich auf unsere Bestellung/Vereinbarung vom [Дата].", ru: "Я ссылаюсь на наш заказ/договоренность от [Дата].", tip:"sich beziehen auf + Akk." }
+    ],
+    main_problem: [
+      { id: 301, text: "Leider muss ich Ihnen mitteilen, dass [объект жалобы] nicht der Beschreibung entspricht.", ru: "К сожалению, [объект жалобы] не соответствует описанию.", tip:"Придаточное с 'dass' — глагол в конце." },
+      { id: 302, text: "Der Hauptgrund für meine Beschwerde ist, dass es Mängel gibt.", ru: "Причина жалобы — наличие недостатков.", tip:"Mängel — мн. число." }
+    ],
+    problem_consequence: [
+      { id: 401, text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", ru: "Из-за этой проблемы я не смог выполнить работу как планировал.", tip:"Aufgrund + Genitiv." },
+      { id: 402, text: "Das hat bei mir zu großem Ärger und Unannehmlichkeiten geführt.", ru: "Это привело к большим неудобствам.", tip:"Устойчивые выражения." }
+    ],
+    evidence: [
+      { id: 501, text: "Ich habe Ihnen alle notwendigen Unterlagen in der Anlage beigefügt.", ru: "Я приложил все необходимые документы.", tip:"beifügen — Perfekt: habe beigefügt." },
+      { id: 502, text: "Ich möchte Sie bitten, die Angelegenheit innerhalb von 14 Tagen zu klären.", ru: "Прошу решить вопрос в течение 14 дней.", tip:"Infinitivkonstruktion mit 'zu'." }
+    ],
+    resolution_request: [
+      { id: 601, text: "Daher bitte ich Sie höflich um eine schnelle Lösung und um Ersatz.", ru: "Прошу срочного решения и замены.", tip:"Daher — следствие." },
+      { id: 602, text: "Falls dies nicht möglich ist, erwarte ich die volle Rückerstattung des Kaufpreises.", ru: "Если невозможно — ожидаю возврата средств.", tip:"Условное предложение." }
+    ],
+    closing_formula: [ { id: 701, text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine schnelle Klärung.", ru: "Благодарю за внимание и надеюсь на быстрое решение.", tip:"Заключительная формула." } ],
+    sign_off: [ { id: 801, text: "Mit freundlichen Grüßen,", ru: "С уважением,", tip:"Подпись." } ]
+  };
+
+  // Full Sprechen topics (6)
+  const SPRECHEN_SCENARIOS = [
+    {
+      id: 'thema1',
+      title_ru: 'Тема 1: Описание работодателя',
+      title_de: 'Thema 1: Arbeitgeber beschreiben',
+      dialogues: [
+        {
+          id: '1a',
+          title_ru: 'A. Международная IT-компания',
+          text_de: `A: Ich möchte über einen Arbeitgeber sprechen, bei dem ich gerne arbeiten würde – ein internationales IT-Unternehmen.
 B: Klingt spannend. In welcher Branche ist das Unternehmen tätig?
 A: Es entwickelt Softwarelösungen für große Firmen, zum Beispiel für Banken und Versicherungen.
 B: Und welche Abteilungen gibt es dort?
 A: Es gibt eine Entwicklungsabteilung, ein Marketingteam, den Kundenservice und die Personalabteilung.`,
-          text_ru: `A: Я хочу рассказать о работодателе — международной IT-компании.
+          text_ru: `A: Я хочу рассказать о работодателе — международной IT-компании.
 B: В какой отрасли она работает?
 A: Она разрабатывает ПО для крупных компаний.
 B: Какие отделы там есть?
 A: Разработка, маркетинг, поддержка и HR.`
-        },
-        {
-          id: '1b',
-          title_ru: 'B. Компания с хорошими условиями труда',
-          text_de: `A: Ich kenne ein Unternehmen, das ein sehr gutes Arbeitsumfeld bietet – es ist ein mittelständisches Familienunternehmen.
+        },
+        {
+          id: '1b',
+          title_ru: 'B. Компания с хорошими условиями труда',
+          text_de: `A: Ich kenne ein Unternehmen, das ein sehr gutes Arbeitsumfeld bietet – es ist ein mittelständisches Familienunternehmen.
 B: Was macht das Arbeitsumfeld dort so gut?
 A: Die Atmosphäre ist freundlich und respektvoll. Die Mitarbeiter arbeiten gern zusammen.`,
-          text_ru: `A: Я знаю компанию с очень хорошими условиями труда — это средняя семейная фирма.
+          text_ru: `A: Я знаю компанию с очень хорошими условиями труда — это средняя семейная фирма.
 B: Что делает условия труда там такими хорошими?
 A: Атмосфера дружелюбная и уважительная. Сотрудники охотно работают вместе.`
-        }
-      ]
-    },
-    {
-      id: 'thema2',
-      title_ru: 'Тема 2: События, повлиявшие на выбор профессии',
-      title_de: 'Thema 2: Ereignisse und Erfahrungen',
-      dialogues: [
-        {
-          id: '2a',
-          title_ru: 'A. Детский интерес к технике',
-          text_de: `A: Ich habe mich für meinen Beruf entschieden, weil ich schon als Kind großes Interesse an Technik hatte.
+        }
+      ]
+    },
+    {
+      id: 'thema2',
+      title_ru: 'Тема 2: События, повлиявшие на выбор профессии',
+      title_de: 'Thema 2: Ereignisse und Erfahrungen',
+      dialogues: [
+        {
+          id: '2a',
+          title_ru: 'A. Детский интерес к технике',
+          text_de: `A: Ich habe mich für meinen Beruf entschieden, weil ich schon als Kind großes Interesse an Technik hatte.
 B: Gab es ein besonderes Erlebnis, das dich beeinflusst hat?
 A: Ja, in der Schule haben wir einen Roboter gebaut. Das hat mich fasziniert.`,
-          text_ru: `A: Я выбрал профессию, потому что с детства интересовался техникой.
+          text_ru: `A: Я выбрал профессию, потому что с детства интересовался техникой.
 B: Было ли событие, которое повлияло?
 A: Да, проект с роботом в школе.`
-        }
-      ]
-    },
-    {
-      id: 'thema3',
-      title_ru: 'Тема 3: Человек, повлиявший на выбор профессии',
-      title_de: 'Thema 3: Eine Person, die Ihre Berufswahl beeinflusst hat',
-      dialogues: [
-        {
-          id: '3a',
-          title_ru: 'A. Влияние старшего брата',
-          text_de: `A: Mein älterer Bruder ist Grafikdesigner und hat mich sehr beeinflusst.
+        }
+      ]
+    },
+    {
+      id: 'thema3',
+      title_ru: 'Тема 3: Человек, повлиявший на выбор профессии',
+      title_de: 'Thema 3: Eine Person, die Ihre Berufswahl beeinflusst hat',
+      dialogues: [
+        {
+          id: '3a',
+          title_ru: 'A. Влияние старшего брата',
+          text_de: `A: Mein älterer Bruder ist Grafikdesigner und hat mich sehr beeinflusst.
 B: Wodurch hat er dich beeinflusst?
 A: Er hat mir gezeigt, wie kreativ Arbeit sein kann. Wir haben gemeinsam ein Logo für ein Schulprojekt entworfen.`,
-          text_ru: `A: Мой старший брат — графический дизайнер, он повлиял на меня.
+          text_ru: `A: Мой старший брат — графический дизайнер, он повлиял на меня.
 B: Как именно?
 A: Он показал мне возможности творчества, мы вместе делали логотип.`
-        }
-      ]
-    },
-    {
-      id: 'thema4',
-      title_ru: 'Тема 4: Поиск работы в выбранной стране',
-      title_de: 'Thema 4: Arbeitssuche in einem Land Ihrer Wahl',
-      dialogues: [
-        {
-          id: '4a',
-          title_ru: 'A. Поиск работы в Германии',
-          text_de: `A: Ich möchte über die Arbeitssuche in Deutschland sprechen.
+        }
+      ]
+    },
+    {
+      id: 'thema4',
+      title_ru: 'Тема 4: Поиск работы в выбранной стране',
+      title_de: 'Thema 4: Arbeitssuche in einem Land Ihrer Wahl',
+      dialogues: [
+        {
+          id: '4a',
+          title_ru: 'A. Поиск работы в Германии',
+          text_de: `A: Ich möchte über die Arbeitssuche in Deutschland sprechen.
 B: Wo sucht man zuerst?
 A: Man sucht online, zum Beispiel auf StepStone oder Indeed.
 B: Und wie bereitet man sich vor?
 A: Man informiert sich über die Firma und schreibt eine gute Bewerbung.`,
-          text_ru: `A: Я хочу рассказать о поиске работы в Германии.
+          text_ru: `A: Я хочу рассказать о поиске работы в Германии.
 B: С чего начать?
 A: С поиска вакансий онлайн и подготовки заявки.`
-        }
-      ]
-    },
-    {
-      id: 'thema5',
-      title_ru: 'Тема 5: На что обратить внимание при подаче заявки',
-      title_de: 'Thema 5: Worauf es bei einem Bewerbungsprozess ankommt',
-      dialogues: [
-        {
-          id: '5a',
-          title_ru: 'A. Подготовка к собеседованию',
-          text_de: `A: Ein erfolgreicher Bewerbungsprozess beginnt mit guter Vorbereitung.
+        }
+      ]
+    },
+    {
+      id: 'thema5',
+      title_ru: 'Тема 5: На что обратить внимание при подаче заявки',
+      title_de: 'Thema 5: Worauf es bei einem Bewerbungsprozess ankommt',
+      dialogues: [
+        {
+          id: '5a',
+          title_ru: 'A. Подготовка к собеседованию',
+          text_de: `A: Ein erfolgreicher Bewerbungsprozess beginnt mit guter Vorbereitung.
 B: Was beinhaltet gute Vorbereitung?
 A: Informationen über die Firma, ein klares Lebenslauf und ein persönliches Anschreiben.`,
-          text_ru: `A: Успех при подаче начинается с подготовки.
+          text_ru: `A: Успех при подаче начинается с подготовки.
 B: Что входит в подготовку?
 A: Информация о компании, чёткое резюме и личное сопроводительное письмо.`
-        }
-      ]
-    },
-    {
-      id: 'thema6',
-      title_ru: 'Тема 6: Описание продукта/услуги',
-      title_de: 'Thema 6: Ein Produkt / eine Dienstleistung Ihrer Wahl',
-      dialogues: [
-        {
-          id: '6a',
-          title_ru: 'A. Беспроводные наушники',
-          text_de: `A: Ich möchte ein Produkt beschreiben — meine kabellosen Kopfhörer.
+        }
+      ]
+    },
+    {
+      id: 'thema6',
+      title_ru: 'Тема 6: Описание продукта/услуги',
+      title_de: 'Thema 6: Ein Produkt / eine Dienstleistung Ihrer Wahl',
+      dialogues: [
+        {
+          id: '6a',
+          title_ru: 'A. Беспроводные наушники',
+          text_de: `A: Ich möchte ein Produkt beschreiben — meine kabellosen Kopfhörer.
 B: Welche Eigenschaften sind wichtig?
 A: Leichtes Gewicht, gute Klangqualität und lange Akkulaufzeit.`,
-          text_ru: `A: Я опишу продукт — мои беспроводные наушники.
+          text_ru: `A: Я опишу продукт — мои беспроводные наушники.
 B: Какие характеристики важны?
 A: Лёгкость, качество звука и длительная работа батареи.`
-        }
-      ]
-    }
-  ];
+        }
+      ]
+    }
+  ];
 
-  /***** Audio helpers (AudioContext / play blob / WebSpeech) *****/
-  let audioCtx = null;
-  function getAudioContext(){
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    return audioCtx;
-  }
+  /***** Audio helpers (AudioContext / play blob / WebSpeech) *****/
+  let audioCtx = null;
+  function getAudioContext(){
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
 
-  async function playBlobWithAudioContext(blob){
-    const ctx = getAudioContext();
-    if (ctx.state === 'suspended') {
-      try { await ctx.resume(); } catch(e){}
-    }
-    const ab = await blob.arrayBuffer();
-    const audioBuffer = await ctx.decodeAudioData(ab.slice(0));
-    const src = ctx.createBufferSource();
-    src.buffer = audioBuffer;
-    const g = ctx.createGain();
-    g.gain.value = 1.0;
-    src.connect(g).connect(ctx.destination);
-    src.start(0);
-    return new Promise(res => { src.onended = ()=>res(); setTimeout(()=>res(), 50); });
-  }
+  async function playBlobWithAudioContext(blob){
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch(e){}
+    }
+    const ab = await blob.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(ab.slice(0));
+    const src = ctx.createBufferSource();
+    src.buffer = audioBuffer;
+    const g = ctx.createGain();
+    g.gain.value = 1.0;
+    src.connect(g).connect(ctx.destination);
+    src.start(0);
+    return new Promise(res => { src.onended = ()=>res(); setTimeout(()=>res(), 50); });
+  }
 
-  function speakViaWebSpeech(text, lang='de-DE'){
-    return new Promise((resolve, reject)=>{
-      if (!("speechSynthesis" in window)) return reject(new Error("SpeechSynthesis not supported"));
-      if (window.speechSynthesis.getVoices().length === 0){
-        window.speechSynthesis.addEventListener('voiceschanged', ()=> {
-          speakViaWebSpeech(text, lang).then(resolve).catch(reject);
-        }, { once:true });
-        return;
-      }
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang; u.rate = 0.95; u.pitch = 1.0;
-      const voices = window.speechSynthesis.getVoices();
-      const g = voices.find(v => v.lang && v.lang.startsWith('de'));
-      if (g) u.voice = g;
-      u.onend = ()=>resolve(); u.onerror = (e)=>reject(e);
-      window.speechSynthesis.speak(u);
-    });
-  }
+  function speakViaWebSpeech(text, lang='de-DE'){
+    return new Promise((resolve, reject)=>{
+      if (!("speechSynthesis" in window)) return reject(new Error("SpeechSynthesis not supported"));
+      if (window.speechSynthesis.getVoices().length === 0){
+        window.speechSynthesis.addEventListener('voiceschanged', ()=> {
+          speakViaWebSpeech(text, lang).then(resolve).catch(reject);
+        }, { once:true });
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang; u.rate = 0.95; u.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const g = voices.find(v => v.lang && v.lang.startsWith('de'));
+      if (g) u.voice = g;
+      u.onend = ()=>resolve(); u.onerror = (e)=>reject(e);
+      window.speechSynthesis.speak(u);
+    });
+  }
 
-  /***** Top-level TTS: try proxy ElevenLabs -> fallback WebSpeech *****/
-  const ttsCache = new Map(); // key -> objectURL
+  /***** Top-level TTS: try proxy ElevenLabs -> fallback WebSpeech *****/
+  const ttsCache = new Map(); // key -> objectURL
 
-  async function fetchTtsFromProxy(text, voiceId){
-    const url = `${PROXY_TTS_PATH}?text=${encodeURIComponent(text)}${voiceId ? '&voice='+encodeURIComponent(voiceId):''}`;
-    const resp = await fetch(url);
-    if (!resp.ok){
-      const txt = await resp.text().catch(()=>"");
-      const err = new Error(`Proxy responded ${resp.status}: ${txt || resp.statusText}`);
-      err.status = resp.status;
-      throw err;
-    }
-    const blob = await resp.blob();
-    if (!blob || blob.size === 0) throw new Error("Empty audio blob from proxy");
-    return blob;
-  }
+  // Изменено: Добавлен voiceId в аргументы
+  async function fetchTtsFromProxy(text, voiceId){
+    const url = `${PROXY_TTS_PATH}?text=${encodeURIComponent(text)}${voiceId && voiceId!=='default' ? '&voice='+encodeURIComponent(voiceId):''}`;
+    const resp = await fetch(url);
+    if (!resp.ok){
+      const txt = await resp.text().catch(()=>"");
+      const err = new Error(`Proxy responded ${resp.status}: ${txt || resp.statusText}`);
+      err.status = resp.status;
+      throw err;
+    }
+    const blob = await resp.blob();
+    if (!blob || blob.size === 0) throw new Error("Empty audio blob from proxy");
+    return blob;
+  }
 
-  async function speakGermanOnly(text, onLog=(m)=>{}) {
-    if (!text || !text.trim()) { onLog("Empty text — nothing to speak"); return {engine:'none'}; }
-    const key = `eleven:${text.slice(0,200)}`;
-    try {
-      if (ttsCache.has(key)) {
-        onLog("Using cached audio (ElevenLabs)");
-        const obj = ttsCache.get(key);
-        const fetched = await fetch(obj);
-        const b = await fetched.blob();
-        await playBlobWithAudioContext(b);
-        return { engine: "eleven_cached" };
-      }
-      onLog("Requesting ElevenLabs via proxy...");
-      const blob = await fetchTtsFromProxy(text);
-      const obj = URL.createObjectURL(blob);
-      ttsCache.set(key, obj);
-      onLog("Playing ElevenLabs audio (via AudioContext)...");
-      await playBlobWithAudioContext(blob);
-      return { engine: "eleven" };
-    } catch (e) {
-      onLog("ElevenLabs proxy failed: " + (e.message || e));
-      onLog("Falling back to Web Speech...");
-      try {
-        await speakViaWebSpeech(text, 'de-DE');
-        return { engine: "webspeech" };
-      } catch (we) {
-        onLog("WebSpeech failed: " + (we.message || we));
-        throw new Error("All TTS engines failed");
-      }
-    }
-  }
+  // Изменено: Добавлен voiceId в аргументы
+  async function speakGermanOnly(text, voiceId, onLog=(m)=>{}) {
+    if (!text || !text.trim()) { onLog("Empty text — nothing to speak"); return {engine:'none'}; }
+    // Изменено: voiceId добавлен в ключ кэша
+    const key = `eleven:${voiceId}:${text.slice(0,200)}`;
+    try {
+      if (ttsCache.has(key)) {
+        onLog("Using cached audio (ElevenLabs)");
+        const obj = ttsCache.get(key);
+        const fetched = await fetch(obj);
+        const b = await fetched.blob();
+        await playBlobWithAudioContext(b);
+        return { engine: "eleven_cached" };
+      }
+      onLog("Requesting ElevenLabs via proxy...");
+      // Изменено: Передаем voiceId
+      const blob = await fetchTtsFromProxy(text, voiceId);
+      const obj = URL.createObjectURL(blob);
+      ttsCache.set(key, obj);
+      onLog("Playing ElevenLabs audio (via AudioContext)...");
+      await playBlobWithAudioContext(blob);
+      return { engine: "eleven" };
+    } catch (e) {
+      onLog("ElevenLabs proxy failed: " + (e.message || e));
+      onLog("Falling back to Web Speech...");
+      try {
+        await speakViaWebSpeech(text, 'de-DE');
+        return { engine: "webspeech" };
+      } catch (we) {
+        onLog("WebSpeech failed: " + (we.message || we));
+        throw new Error("All TTS engines failed");
+      }
+    }
+  }
 
-  /***** UI: small icons *****/
-  const Icon = {
-    Volume:(p)=>(<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19 5c.4 1.1.5 2.3.5 3.5s-.1 2.4-.5 3.5"/><path d="M15 9.5c.3.8.5 1.7.5 2.5s-.2 1.7-.5 2.5"/></svg>),
-    Loader:(p)=>(<svg viewBox="0 0 24 24" width="16" height="16" className="animate-spin" {...p}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="31.4 31.4" strokeLinecap="round"/></svg>),
-    Debug:(p)=>(<svg viewBox="0 0 24 24" width="16" height="16" {...p}><path d="M3 12h18M12 3v18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>),
-    Check:(p)=>(<svg viewBox="0 0 24 24" width="16" height="16" {...p}><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>)
-  };
+  /***** UI: small icons *****/
+  const Icon = {
+    Volume:(p)=>(<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19 5c.4 1.1.5 2.3.5 3.5s-.1 2.4-.5 3.5"/><path d="M15 9.5c.3.8.5 1.7.5 2.5s-.2 1.7-.5 2.5"/></svg>),
+    Loader:(p)=>(<svg viewBox="0 0 24 24" width="16" height="16" className="animate-spin" {...p}><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="31.4 31.4" strokeLinecap="round"/></svg>),
+    Debug:(p)=>(<svg viewBox="0 0 24 24" width="16" height="16" {...p}><path d="M3 12h18M12 3v18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>),
+    Check:(p)=>(<svg viewBox="0 0 24 24" width="16" height="16" {...p}><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>)
+  };
 
-  /***** App *****/
-  function App(){
-    // default: Schreiben opens first as you wanted
-    const [view, setView] = useState('schreiben');
-    const [selections, setSelections] = useState(() => ({
-      greetings: PHRASES_DATA.greetings[0].id,
-      issue_intro: PHRASES_DATA.issue_intro[0].id,
-      main_problem: PHRASES_DATA.main_problem[0].id,
-      problem_consequence: PHRASES_DATA.problem_consequence[0].id,
-      evidence: PHRASES_DATA.evidence[0].id,
-      resolution_request: PHRASES_DATA.resolution_request[0].id,
-      closing_formula: PHRASES_DATA.closing_formula[0].id,
-      sign_off: PHRASES_DATA.sign_off[0].id,
-    }));
-    const [activeTopic, setActiveTopic] = useState(SCHREIBEN_TOPICS[0]);
-    const [senderName, setSenderName] = useState("Ivan Ivanov");
-    const [invoiceNumber, setInvoiceNumber] = useState("RE-2024-5829");
-    const [currentDate] = useState(new Date().toLocaleDateString('de-DE'));
-    const [activeScenario, setActiveScenario] = useState(SPRECHEN_SCENARIOS[0]);
-    const [activeDialogue, setActiveDialogue] = useState(SPRECHEN_SCENARIOS[0].dialogues[0]);
+  /***** App *****/
+  function App(){
+    // default: Schreiben opens first as you wanted
+    const [view, setView] = useState('schreiben');
+    const [selections, setSelections] = useState(() => ({
+      greetings: PHRASES_DATA.greetings[0].id,
+      issue_intro: PHRASES_DATA.issue_intro[0].id,
+      main_problem: PHRASES_DATA.main_problem[0].id,
+      problem_consequence: PHRASES_DATA.problem_consequence[0].id,
+      evidence: PHRASES_DATA.evidence[0].id,
+      resolution_request: PHRASES_DATA.resolution_request[0].id,
+      closing_formula: PHRASES_DATA.closing_formula[0].id,
+      sign_off: PHRASES_DATA.sign_off[0].id,
+    }));
+    const [activeTopic, setActiveTopic] = useState(SCHREIBEN_TOPICS[0]);
+    const [senderName, setSenderName] = useState("Ivan Ivanov");
+    const [invoiceNumber, setInvoiceNumber] = useState("RE-2024-5829");
+    const [currentDate] = useState(new Date().toLocaleDateString('de-DE'));
+    const [activeScenario, setActiveScenario] = useState(SPRECHEN_SCENARIOS[0]);
+    const [activeDialogue, setActiveDialogue] = useState(SPRECHEN_SCENARIOS[0].dialogues[0]);
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [status, setStatus] = useState("Готово");
-    const [debugOpen, setDebugOpen] = useState(false);
-    const [logs, setLogs] = useState([]);
-    const [audioUnlocked, setAudioUnlocked] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [status, setStatus] = useState("Готово");
+    const [debugOpen, setDebugOpen] = useState(false);
+    const [logs, setLogs] = useState([]);
+    const [audioUnlocked, setAudioUnlocked] = useState(false);
+    // НОВЫЙ useState: для выбора голоса
+    const [selectedVoiceId, setSelectedVoiceId] = useState(ELEVENLABS_VOICES[0].id);
 
-    // helpers
-    const allPhrases = useMemo(()=>Object.values(PHRASES_DATA).flat(), []);
-    const findPhraseById = useCallback((id)=> allPhrases.find(p=>p.id===id), [allPhrases]);
-    const replacePlaceholder = useCallback((text)=>{
-      if(!text) return '';
-      return text.replace(/\[объект жалобы\]/g, activeTopic.de).replace(/\[Дата\]/g, currentDate);
-    }, [activeTopic, currentDate]);
 
-    const assembleLetter = useCallback(()=>{
-      const parts = [
-        `Ort, ${currentDate}`,
-        replacePlaceholder(findPhraseById(selections.greetings)?.text || ''),
-        replacePlaceholder(findPhraseById(selections.issue_intro)?.text || ''),
-        replacePlaceholder(findPhraseById(selections.main_problem)?.text || ''),
-        replacePlaceholder(findPhraseById(selections.problem_consequence)?.text || ''),
-        replacePlaceholder(findPhraseById(selections.evidence)?.text || ''),
-        replacePlaceholder(findPhraseById(selections.resolution_request)?.text || ''),
-        replacePlaceholder(findPhraseById(selections.closing_formula)?.text || ''),
-        replacePlaceholder(findPhraseById(selections.sign_off)?.text || ''),
-        senderName
-      ];
-      return parts.filter(Boolean).join("\n\n");
-    }, [selections, findPhraseById, replacePlaceholder, senderName, currentDate]);
+    // helpers
+    const allPhrases = useMemo(()=>Object.values(PHRASES_DATA).flat(), []);
+    const findPhraseById = useCallback((id)=> allPhrases.find(p=>p.id===id), [allPhrases]);
+    const replacePlaceholder = useCallback((text)=>{
+      if(!text) return '';
+      return text.replace(/\[объект жалобы\]/g, activeTopic.de).replace(/\[Дата\]/g, currentDate);
+    }, [activeTopic, currentDate]);
 
-    // logging
-    const log = useCallback((msg, type='info')=>{
-      const t = new Date().toLocaleTimeString();
-      setLogs(prev => [...prev, {t,m:msg,type}].slice(-200));
-      console.log(`[${type.toUpperCase()}] ${t}: ${msg}`);
-    }, []);
+    const assembleLetter = useCallback(()=>{
+      const parts = [
+        `Ort, ${currentDate}`,
+        replacePlaceholder(findPhraseById(selections.greetings)?.text || ''),
+        replacePlaceholder(findPhraseById(selections.issue_intro)?.text || ''),
+        replacePlaceholder(findPhraseById(selections.main_problem)?.text || ''),
+        replacePlaceholder(findPhraseById(selections.problem_consequence)?.text || ''),
+        replacePlaceholder(findPhraseById(selections.evidence)?.text || ''),
+        replacePlaceholder(findPhraseById(selections.resolution_request)?.text || ''),
+        replacePlaceholder(findPhraseById(selections.closing_formula)?.text || ''),
+        replacePlaceholder(findPhraseById(selections.sign_off)?.text || ''),
+        senderName
+      ];
+      return parts.filter(Boolean).join("\n\n");
+    }, [selections, findPhraseById, replacePlaceholder, senderName, currentDate]);
 
-    // parse dialogues
-    const parseDialogue = useCallback((de, ru) => {
-      const deLines = (de||"").split('\n').map(l=>l.trim()).filter(Boolean);
-      const ruLines = (ru||"").split('\n').map(l=>l.trim()).filter(Boolean);
-      return deLines.map((line, i)=>{
-        const m = line.match(/^(A:|B:)/);
-        const speaker = m ? m[0] : 'A:';
-        const de_text = line.replace(/^(A:|B:)\s*/,'');
-        const ru_text = ruLines[i] ? ruLines[i].replace(/^(A:|B:)\s*/,'') : '';
-        return { id:i, speaker, de_text, ru_text };
-      });
-    }, []);
-    const parsedDialogue = useMemo(()=> parseDialogue(activeDialogue.text_de, activeDialogue.text_ru), [activeDialogue, parseDialogue]);
+    // logging
+    const log = useCallback((msg, type='info')=>{
+      const t = new Date().toLocaleTimeString();
+      setLogs(prev => [...prev, {t,m:msg,type}].slice(-200));
+      console.log(`[${type.toUpperCase()}] ${t}: ${msg}`);
+    }, []);
 
-    // unlock audio for Chrome (user gesture)
-    const unlockAudio = useCallback(async ()=>{
-      try {
-        const ctx = getAudioContext();
-        if (ctx.state === 'suspended') await ctx.resume();
-        setAudioUnlocked(true);
-        setStatus("Аудио активировано");
-        log("AudioContext resumed by user gesture", "info");
-      } catch(e){
-        log("Audio unlock failed: " + (e.message||e), "error");
-        setStatus("Не удалось разблокировать аудио");
-      }
-    }, [log]);
+    // parse dialogues
+    const parseDialogue = useCallback((de, ru) => {
+      const deLines = (de||"").split('\n').map(l=>l.trim()).filter(Boolean);
+      const ruLines = (ru||"").split('\n').map(l=>l.trim()).filter(Boolean);
+      return deLines.map((line, i)=>{
+        const m = line.match(/^(A:|B:)/);
+        const speaker = m ? m[0] : 'A:';
+        const de_text = line.replace(/^(A:|B:)\s*/,'');
+        const ru_text = ruLines[i] ? ruLines[i].replace(/^(A:|B:)\s*/,'') : '';
+        return { id:i, speaker, de_text, ru_text };
+      });
+    }, []);
+    const parsedDialogue = useMemo(()=> parseDialogue(activeDialogue.text_de, activeDialogue.text_ru), [activeDialogue, parseDialogue]);
 
-    // speak German only - uses top-level speakGermanOnly
-    const speak = useCallback(async (text)=>{
-      setIsLoading(true);
-      setStatus("Генерация озвучки...");
-      log("Speak requested: " + text.slice(0,60), "info");
-      try {
-        // try to resume audio context
-        try { const ctx = getAudioContext(); if (ctx.state === 'suspended') await ctx.resume(); } catch(e){}
-        const res = await speakGermanOnly(text, (m)=>log(m, "info"));
-        setStatus(`Озвучено: ${res.engine || 'unknown'}`);
-        log("Speak finished: " + (res.engine || 'unknown'), "success");
-      } catch (e) {
-        log("Speak error: " + (e.message || e), "error");
-        setStatus("Ошибка TTS");
-      } finally { setIsLoading(false); }
-    }, [log]);
+    // unlock audio for Chrome (user gesture)
+    const unlockAudio = useCallback(async ()=>{
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') await ctx.resume();
+        setAudioUnlocked(true);
+        setStatus("Аудио активировано");
+        log("AudioContext resumed by user gesture", "info");
+      } catch(e){
+        log("Audio unlock failed: " + (e.message||e), "error");
+        setStatus("Не удалось разблокировать аудио");
+      }
+    }, [log]);
 
-    // quick tests
-    const testPremium = async ()=> {
-      await unlockAudio();
-      await speak("Hallo! Dies ist ein Premium TTS Test. Bitte hören Sie aufmerksam zu.");
-    };
-    const testWeb = async ()=> {
-      await unlockAudio();
-      setStatus("Пробую Web Speech...");
-      try {
-        await speakViaWebSpeech("Hallo! Dies ist ein Test der Browserstimme.", "de-DE");
-        setStatus("Озвучено: WebSpeech");
-        log("WebSpeech test success", "success");
-      } catch (e) { log("WebSpeech test failed: " + (e.message||e), "error"); setStatus("WebSpeech failed"); }
-    };
+    // speak German only - uses top-level speakGermanOnly
+    // Изменено: Добавлен selectedVoiceId
+    const speak = useCallback(async (text)=>{
+      setIsLoading(true);
+      setStatus("Генерация озвучки...");
+      log("Speak requested: " + text.slice(0,60), "info");
+      try {
+        // try to resume audio context
+        try { const ctx = getAudioContext(); if (ctx.state === 'suspended') await ctx.resume(); } catch(e){}
+        const res = await speakGermanOnly(text, selectedVoiceId, (m)=>log(m, "info"));
+        setStatus(`Озвучено: ${res.engine || 'unknown'}`);
+        log("Speak finished: " + (res.engine || 'unknown'), "success");
+      } catch (e) {
+        log("Speak error: " + (e.message || e), "error");
+        setStatus("Ошибка TTS");
+      } finally { setIsLoading(false); }
+    }, [log, selectedVoiceId]); // selectedVoiceId добавлен в зависимости
 
-    // progress for Schreiben
-    const progress = useMemo(()=>{
-      const total = Object.keys(selections).length;
-      const done = Object.keys(selections).filter(k=>selections[k] !== undefined).length;
-      return Math.round((done/total)*100);
-    }, [selections]);
+    // quick tests
+    const testPremium = async ()=> {
+      await unlockAudio();
+      await speak("Hallo! Dies ist ein Premium TTS Test. Bitte hören Sie aufmerksam zu.");
+    };
+    const testWeb = async ()=> {
+      await unlockAudio();
+      setStatus("Пробую Web Speech...");
+      try {
+        await speakViaWebSpeech("Hallo! Dies ist ein Test der Browserstimme.", "de-DE");
+        setStatus("Озвучено: WebSpeech");
+        log("WebSpeech test success", "success");
+      } catch (e) { log("WebSpeech test failed: " + (e.message||e), "error"); setStatus("WebSpeech failed"); }
+    };
 
-    // cleanup
-    useEffect(()=> {
-      return ()=> {
-        ttsCache.forEach(u=>{ try{ URL.revokeObjectURL(u); } catch(e){} });
-      };
-    }, []);
+    // progress for Schreiben
+    const progress = useMemo(()=>{
+      const total = Object.keys(selections).length;
+      const done = Object.keys(selections).filter(k=>selections[k] !== undefined).length;
+      return Math.round((done/total)*100);
+    }, [selections]);
 
-    return (
-      <div className="space-y-6">
-        <header className="text-center">
-          <h1 className="text-3xl font-extrabold text-indigo-800">B2 German Exam Trainer — v8 Pro</h1>
-          <p className="text-sm text-gray-600 mt-1">Schreiben & Sprechen — Premium TTS (via Netlify proxy) + Web Speech fallback</p>
+    // cleanup
+    useEffect(()=> {
+      return ()=> {
+        ttsCache.forEach(u=>{ try{ URL.revokeObjectURL(u); } catch(e){} });
+      };
+    }, []);
 
-          <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
-            <button onClick={()=>setView('schreiben')} className={`px-4 py-2 rounded ${view==='schreiben' ? 'bg-indigo-700 text-white' : 'bg-white text-gray-700 border'}`}>Schreiben</button>
-            <button onClick={()=>setView('sprechen')} className={`px-4 py-2 rounded ${view==='sprechen' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border'}`}>Sprechen</button>
+    return (
+      <div className="space-y-6">
+        <header className="text-center">
+          <h1 className="text-3xl font-extrabold text-indigo-800">B2 German Exam Trainer — v8 Pro</h1>
+          <p className="text-sm text-gray-600 mt-1">Schreiben & Sprechen — Premium TTS (via Netlify proxy) + Web Speech fallback</p>
 
-            <button onClick={unlockAudio} className="px-4 py-2 bg-purple-600 text-white rounded">🎧 Активировать звук</button>
-            <button onClick={testPremium} className="px-3 py-2 border rounded">🎵 Тест Premium</button>
-            <button onClick={testWeb} className="px-3 py-2 border rounded">🔇 Тест Web</button>
+          <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+            <button onClick={()=>setView('schreiben')} className={`px-4 py-2 rounded ${view==='schreiben' ? 'bg-indigo-700 text-white' : 'bg-white text-gray-700 border'}`}>Schreiben</button>
+            <button onClick={()=>setView('sprechen')} className={`px-4 py-2 rounded ${view==='sprechen' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border'}`}>Sprechen</button>
 
-            <button onClick={()=>setDebugOpen(d=>!d)} className="px-3 py-2 border rounded flex items-center gap-2">
-              <Icon.Debug /> <span>{debugOpen ? "Скрыть Debug" : "🛠 Debug"}</span>
-            </button>
-          </div>
+            <button onClick={unlockAudio} className="px-4 py-2 bg-purple-600 text-white rounded">🎧 Активировать звук</button>
+            
+            {/* НОВЫЙ ЭЛЕМЕНТ: Выбор голоса */}
+            <select value={selectedVoiceId} onChange={e => setSelectedVoiceId(e.target.value)} className="px-3 py-2 border rounded">
+              {ELEVENLABS_VOICES.map(v => (
+                <option key={v.id} value={v.id}>🎤 {v.name}</option>
+              ))}
+            </select>
+            
+            <button onClick={testPremium} className="px-3 py-2 border rounded">🎵 Тест Premium</button>
+            <button onClick={testWeb} className="px-3 py-2 border rounded">🔇 Тест Web</button>
 
-          <div className="mt-3">
-            <span className="chip" style={{background:'#eef2ff', color:'#1e293b', padding:'8px 12px', borderRadius:999}}>
-              {isLoading ? (<><Icon.Loader className="mr-2"/> </>) : null}
-              <strong style={{marginLeft:6}}>{status}</strong>
-            </span>
-          </div>
-        </header>
+            <button onClick={()=>setDebugOpen(d=>!d)} className="px-3 py-2 border rounded flex items-center gap-2">
+              <Icon.Debug /> <span>{debugOpen ? "Скрыть Debug" : "🛠 Debug"}</span>
+            </button>
+          </div>
 
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT: Schreiben controls */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="card">
-              <h3 className="text-lg font-semibold mb-2">1. Выбор темы (Schreiben)</h3>
-              <select value={activeTopic.id} onChange={(e)=> setActiveTopic(SCHREIBEN_TOPICS.find(t=>t.id===e.target.value))} className="w-full p-3 rounded border">
-                {SCHREIBEN_TOPICS.map(t=> <option key={t.id} value={t.id}>{t.ru} — {t.de}</option>)}
-              </select>
+          <div className="mt-3">
+            <span className="chip" style={{background:'#eef2ff', color:'#1e293b', padding:'8px 12px', borderRadius:999}}>
+              {isLoading ? (<><Icon.Loader className="mr-2"/> </>) : null}
+              <strong style={{marginLeft:6}}>{status}</strong>
+            </span>
+          </div>
+        </header>
 
-              <div className="mt-3">
-                <label className="block text-sm text-gray-600">Ваше имя</label>
-                <input className="w-full p-2 mt-1 border rounded" value={senderName} onChange={e=>setSenderName(e.target.value)} />
-              </div>
+        <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* LEFT: Schreiben controls */}
+          <div className="lg:col-span-1 space-y-4">
+            <div className="card">
+              <h3 className="text-lg font-semibold mb-2">1. Выбор темы (Schreiben)</h3>
+              <select value={activeTopic.id} onChange={(e)=> setActiveTopic(SCHREIBEN_TOPICS.find(t=>t.id===e.target.value))} className="w-full p-3 rounded border">
+                {SCHREIBEN_TOPICS.map(t=> <option key={t.id} value={t.id}>{t.ru} — {t.de}</option>)}
+              </select>
 
-              <div className="mt-3">
-                <label className="block text-sm text-gray-600">Номер счёта / заказа</label>
-                <input className="w-full p-2 mt-1 border rounded" value={invoiceNumber} onChange={e=>setInvoiceNumber(e.target.value)} />
-              </div>
+              <div className="mt-3">
+                <label className="block text-sm text-gray-600">Ваше имя</label>
+                <input className="w-full p-2 mt-1 border rounded" value={senderName} onChange={e=>setSenderName(e.target.value)} />
+              </div>
 
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                  <span>Прогресс</span> <span>{progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div style={{width:`${progress}%`}} className="bg-green-600 h-2 rounded-full transition-all"></div>
-                </div>
-              </div>
+              <div className="mt-3">
+                <label className="block text-sm text-gray-600">Номер счёта / заказа</label>
+                <input className="w-full p-2 mt-1 border rounded" value={invoiceNumber} onChange={e=>setInvoiceNumber(e.target.value)} />
+              </div>
 
-              <div className="mt-4">
-                <button onClick={()=>{
-                  const newSel = Object.keys(PHRASES_DATA).reduce((acc,k)=>{
-                    const arr = PHRASES_DATA[k];
-                    acc[k] = arr[Math.floor(Math.random()*arr.length)].id;
-                    return acc;
-                  },{});
-                  setSelections(newSel);
-                  log("Randomized phrase selection", "info");
-                }} className="w-full bg-green-600 text-white py-2 rounded">Случайная комбинация</button>
-              </div>
-            </div>
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+                  <span>Прогресс</span> <span>{progress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div style={{width:`${progress}%`}} className="bg-green-600 h-2 rounded-full transition-all"></div>
+                </div>
+              </div>
 
-            <div className="card">
-              <h3 className="text-lg font-semibold mb-2">2. Фразы (Schreiben)</h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                {Object.keys(PHRASES_DATA).map(key=>{
-                  const labels = {
-                    greetings:'1. Приветствие', issue_intro:'2. Введение', main_problem:'3. Суть',
-                    problem_consequence:'4. Последствия', evidence:'5. Документы', resolution_request:'6. Запрос',
-                    closing_formula:'7. Заключение', sign_off:'8. Подпись'
-                  };
-                  return (
-                    <div key={key}>
-                      <div className="text-sm font-semibold mb-2">{labels[key]}</div>
-                      <div className="space-y-2">
-                        {PHRASES_DATA[key].map(p=>{
-                          const active = selections[key] === p.id;
-                          return (
-                            <div key={p.id} className={`p-3 rounded ${active ? 'bg-blue-50 border-2 border-blue-200' : 'bg-gray-50 border border-gray-100'} flex justify-between items-start`}>
-                              <div>
-                                <div className="font-medium">{replacePlaceholder(p.text)}</div>
-                                <div className="text-sm italic text-gray-500 mt-1">{p.ru}</div>
-                              </div>
-                              <div className="ml-3 flex flex-col items-end">
-                                <button title="Выбрать" className="btn-icon bg-white border p-1 mb-2" onClick={()=>{ setSelections(prev=>({...prev,[key]: p.id})); log(`Selected phrase ${p.id} (${key})`, "info"); }}>
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M20 6L9 17l-5-5"/></svg>
-                                </button>
-                                <button title="Озвучить (DE)" className="btn-icon bg-indigo-600 text-white p-1" onClick={async ()=>{ await unlockAudio(); await speak(replacePlaceholder(p.text)); }}>
-                                  {isLoading ? <Icon.Loader /> : <Icon.Volume />}
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+              <div className="mt-4">
+                <button onClick={()=>{
+                  const newSel = Object.keys(PHRASES_DATA).reduce((acc,k)=>{
+                    const arr = PHRASES_DATA[k];
+                    acc[k] = arr[Math.floor(Math.random()*arr.length)].id;
+                    return acc;
+                  },{});
+                  setSelections(newSel);
+                  log("Randomized phrase selection", "info");
+                }} className="w-full bg-green-600 text-white py-2 rounded">Случайная комбинация</button>
+              </div>
+            </div>
 
-          {/* CENTER + RIGHT */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Готовое письмо</h2>
-                <div className="text-sm text-gray-600">Дата: {currentDate}</div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded border min-h-[180px] whitespace-pre-wrap text-gray-800">
-                <pre className="m-0">{assembleLetter()}</pre>
-              </div>
-              <div className="mt-4 flex gap-3 items-center flex-wrap">
-                <button className="px-4 py-2 bg-indigo-700 text-white rounded" onClick={async ()=>{ await unlockAudio(); await speak(assembleLetter()); }}>
-                  {isLoading ? <Icon.Loader className="mr-2"/> : <Icon.Volume className="mr-2"/>} Озвучить письмо (DE)
-                </button>
-                <button className="px-4 py-2 border rounded" onClick={()=>{ navigator.clipboard.writeText(assembleLetter()); alert("Письмо скопировано"); }}>Копировать</button>
-                <a className="px-4 py-2 border rounded text-sm" href={"data:text/plain;charset=utf-8,"+encodeURIComponent(assembleLetter())} download="letter.txt">Скачать .txt</a>
-              </div>
-            </div>
+            <div className="card">
+              <h3 className="text-lg font-semibold mb-2">2. Фразы (Schreiben)</h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                {Object.keys(PHRASES_DATA).map(key=>{
+                  const labels = {
+                    greetings:'1. Приветствие', issue_intro:'2. Введение', main_problem:'3. Суть',
+                    problem_consequence:'4. Последствия', evidence:'5. Документы', resolution_request:'6. Запрос',
+                    closing_formula:'7. Заключение', sign_off:'8. Подпись'
+                  };
+                  return (
+                    <div key={key}>
+                      <div className="text-sm font-semibold mb-2">{labels[key]}</div>
+                      <div className="space-y-2">
+                        {PHRASES_DATA[key].map(p=>{
+                          const active = selections[key] === p.id;
+                          return (
+                            <div key={p.id} className={`p-3 rounded ${active ? 'bg-blue-50 border-2 border-blue-200' : 'bg-gray-50 border border-gray-100'} flex justify-between items-start`}>
+                              <div>
+                                <div className="font-medium">{replacePlaceholder(p.text)}</div>
+                                <div className="text-sm italic text-gray-500 mt-1">{p.ru}</div>
+                              </div>
+                              <div className="ml-3 flex flex-col items-end">
+                                <button title="Выбрать" className="btn-icon bg-white border p-1 mb-2" onClick={()=>{ setSelections(prev=>({...prev,[key]: p.id})); log(`Selected phrase ${p.id} (${key})`, "info"); }}>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M20 6L9 17l-5-5"/></svg>
+                                </button>
+                                <button title="Озвучить (DE)" className="btn-icon bg-indigo-600 text-white p-1" onClick={async ()=>{ await unlockAudio(); await speak(replacePlaceholder(p.text)); }}>
+                                  {isLoading ? <Icon.Loader /> : <Icon.Volume />}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
-            <div className="card">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold">{activeScenario.title_ru} — {activeScenario.title_de}</h3>
-                <div>
-                  <select value={activeScenario.id} onChange={(e)=>{
-                    const s = SPRECHEN_SCENARIOS.find(x=>x.id===e.target.value);
-                    setActiveScenario(s); setActiveDialogue(s.dialogues[0]);
-                    log(`Selected scenario ${s.id}`, "info");
-                  }} className="p-2 border rounded">
-                    {SPRECHEN_SCENARIOS.map(s=> <option key={s.id} value={s.id}>{s.title_ru}</option>)}
-                  </select>
-                </div>
-              </div>
+          {/* CENTER + RIGHT */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="card">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Готовое письмо</h2>
+                <div className="text-sm text-gray-600">Дата: {currentDate}</div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded border min-h-[180px] whitespace-pre-wrap text-gray-800">
+                <pre className="m-0">{assembleLetter()}</pre>
+              </div>
+              <div className="mt-4 flex gap-3 items-center flex-wrap">
+                <button className="px-4 py-2 bg-indigo-700 text-white rounded" onClick={async ()=>{ await unlockAudio(); await speak(assembleLetter()); }}>
+                  {isLoading ? <Icon.Loader className="mr-2"/> : <Icon.Volume className="mr-2"/>} Озвучить письмо (DE)
+                </button>
+                <button className="px-4 py-2 border rounded" onClick={()=>{ navigator.clipboard.writeText(assembleLetter()); alert("Письмо скопировано"); }}>Копировать</button>
+                <a className="px-4 py-2 border rounded text-sm" href={"data:text/plain;charset=utf-8,"+encodeURIComponent(assembleLetter())} download="letter.txt">Скачать .txt</a>
+              </div>
+            </div>
 
-              <div className="mb-3">
-                {activeScenario.dialogues.length > 1 && (
-                  <div className="flex gap-2 mb-3">
-                    {activeScenario.dialogues.map(d=> <button key={d.id} onClick={()=>{ setActiveDialogue(d); log(`Selected dialogue ${d.id}`, "info"); }} className={`px-3 py-1 rounded ${activeDialogue.id===d.id ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>{d.title_ru}</button>)}
-                  </div>
-                )}
+            <div className="card">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold">{activeScenario.title_ru} — {activeScenario.title_de}</h3>
+                <div>
+                  <select value={activeScenario.id} onChange={(e)=>{
+                    const s = SPRECHEN_SCENARIOS.find(x=>x.id===e.target.value);
+                    setActiveScenario(s); setActiveDialogue(s.dialogues[0]);
+                    log(`Selected scenario ${s.id}`, "info");
+                  }} className="p-2 border rounded">
+                    {SPRECHEN_SCENARIOS.map(s=> <option key={s.id} value={s.id}>{s.title_ru}</option>)}
+                  </select>
+                </div>
+              </div>
 
-                <div className="text-sm text-gray-700 mb-2">{activeDialogue.title_ru}</div>
+              <div className="mb-3">
+                {activeScenario.dialogues.length > 1 && (
+                  <div className="flex gap-2 mb-3">
+                    {activeScenario.dialogues.map(d=> <button key={d.id} onClick={()=>{ setActiveDialogue(d); log(`Selected dialogue ${d.id}`, "info"); }} className={`px-3 py-1 rounded ${activeDialogue.id===d.id ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>{d.title_ru}</button>)}
+                  </div>
+                )}
 
-                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                  {parsedDialogue.map(line => (
-                    <div key={line.id} className={`p-3 rounded ${line.speaker==='A:' ? 'bg-blue-50 border-blue-100' : 'bg-gray-50 border-gray-100'} flex justify-between items-start`}>
-                      <div>
-                        <div className="font-semibold"><span className="mr-2">{line.speaker}</span>{line.de_text}</div>
-                        <div className="text-sm italic text-gray-600 mt-1">{line.ru_text}</div>
-                      </div>
-                      <div className="ml-3">
-                        <button className="btn-icon bg-indigo-600 text-white p-1" onClick={async ()=>{ await unlockAudio(); await speak(line.de_text); }}>
-                          {isLoading ? <Icon.Loader /> : <Icon.Volume />}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="text-sm text-gray-700 mb-2">{activeDialogue.title_ru}</div>
 
-                <div className="mt-4 text-sm text-gray-600">
-                  💡 Совет: слушай только немецкий (DE) — сначала слушай, потом повторяй вслух.
-                </div>
-              </div>
-            </div>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                  {parsedDialogue.map(line => (
+                    <div key={line.id} className={`p-3 rounded ${line.speaker==='A:' ? 'bg-blue-50 border-blue-100' : 'bg-gray-50 border-gray-100'} flex justify-between items-start`}>
+                      <div>
+                        <div className="font-semibold"><span className="mr-2">{line.speaker}</span>{line.de_text}</div>
+                        <div className="text-sm italic text-gray-600 mt-1">{line.ru_text}</div>
+                      </div>
+                      <div className="ml-3">
+                        <button className="btn-icon bg-indigo-600 text-white p-1" onClick={async ()=>{ await unlockAudio(); await speak(line.de_text); }}>
+                          {isLoading ? <Icon.Loader /> : <Icon.Volume />}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-          </div>
-        </main>
+                <div className="mt-4 text-sm text-gray-600">
+                  💡 Совет: слушай только немецкий (DE) — сначала слушай, потом повторяй вслух.
+                </div>
+              </div>
+            </div>
 
-        {/* Debug Panel */}
-        {debugOpen && (
-          <div className="card mt-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold">Debug Panel — логи TTS и статусы</h3>
-              <div>
-                <button className="px-3 py-1 border rounded mr-2" onClick={()=>{ navigator.clipboard.writeText(logs.map(l=>`${l.t} ${l.type}: ${l.m}`).join('\n')); alert('Лог скопирован в буфер'); }}>Копировать лог</button>
-                <button className="px-3 py-1 border rounded" onClick={()=>{ setLogs([]); }}>Очистить</button>
-              </div>
-            </div>
-            <div className="debug-panel">
-              {logs.length===0 && <div style={{color:'#9fb8a6'}}>Лог пуст. Нажмите «Активировать звук» и затем «Тест Premium» или озвучьте фразу.</div>}
-              {logs.map((l,i)=>(
-                <div key={i} style={{color: l.type==='error' ? '#ffb4b4' : l.type==='success' ? '#b7f5c6' : '#cfe6ff', marginBottom:6}}>
-                  <strong style={{color:'#7aa7ff', marginRight:8}}>{l.t}</strong> {l.m}
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 text-sm text-gray-600">Если ты видишь ошибку proxy (401/429) — проверь Netlify ENV: <code>ELEVENLABS_API_KEY</code>.</div>
-          </div>
-        )}
+          </div>
+        </main>
 
-        <footer className="text-center text-xs text-gray-500 mt-8">
-          Сделано с ❤ — v8 Pro. Премиум-озвучка через Netlify proxy. Только немецкий при озвучке.
-        </footer>
-      </div>
-    );
-  }
+        {/* Debug Panel */}
+        {debugOpen && (
+          <div className="card mt-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold">Debug Panel — логи TTS и статусы</h3>
+              <div>
+                <button className="px-3 py-1 border rounded mr-2" onClick={()=>{ navigator.clipboard.writeText(logs.map(l=>`${l.t} ${l.type}: ${l.m}`).join('\n')); alert('Лог скопирован в буфер'); }}>Копировать лог</button>
+                <button className="px-3 py-1 border rounded" onClick={()=>{ setLogs([]); }}>Очистить</button>
+              </div>
+            </div>
+            <div className="debug-panel">
+              {logs.length===0 && <div style={{color:'#9fb8a6'}}>Лог пуст. Нажмите «Активировать звук» и затем «Тест Premium» или озвучьте фразу.</div>}
+              {logs.map((l,i)=>(
+                <div key={i} style={{color: l.type==='error' ? '#ffb4b4' : l.type==='success' ? '#b7f5c6' : '#cfe6ff', marginBottom:6}}>
+                  <strong style={{color:'#7aa7ff', marginRight:8}}>{l.t}</strong> {l.m}
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 text-sm text-gray-600">Если ты видишь ошибку proxy (401/429) — проверь Netlify ENV: <code>ELEVENLABS_API_KEY</code>.</div>
+          </div>
+        )}
 
-  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-  </script>
+        <footer className="text-center text-xs text-gray-500 mt-8">
+          Сделано с ❤ — v8 Pro. Премиум-озвучка через Netlify proxy. Только немецкий при озвучке.
+        </footer>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+
 </body>
 </html>
