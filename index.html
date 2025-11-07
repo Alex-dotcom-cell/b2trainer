@@ -19,6 +19,9 @@
     .log-warning { color: #ffd93d; }
     .log-info { color: #6bcbef; }
     .log-success { color: #6bcf7f; }
+    .voice-option { cursor: pointer; padding: 8px 12px; margin: 4px; border-radius: 6px; border: 1px solid #e2e8f0; }
+    .voice-option:hover { background: #f7fafc; }
+    .voice-option.selected { background: #ebf8ff; border-color: #4299e1; }
   </style>
 </head>
 <body class="p-4">
@@ -124,7 +127,7 @@ A: Es gibt flexible Arbeitszeiten und die Möglichkeit, im Homeoffice zu arbeite
 B: Und was ist mit den Arbeitsbedingungen?
 A: Die Büros sind modern ausgestattet, es gibt kostenlose Getränke und ergonomische Möbel.
 B: Das klingt wirklich attraktiv.
-A: Ja, ich denke, solche Unternehmen sind ein gutes Beispiel für andere.`,
+A: Ja, ich denke, solche Unternehmen sind ein gutes Beispiel für другие.`,
           text_ru: `A: Я знаю компанию, которая предлагает очень хорошие условия труда — это средняя семейная фирма.
 B: Что делает условия труда там такими хорошими?
 A: Атмосфера дружелюбная и уважительная. Сотрудники охотно работают вместе.
@@ -236,7 +239,7 @@ B: Was passiert, wenn man zum Vorstellungsgespräch eingeladen wird?
 A: Man muss sich gut vorbereiten: über die Firma lesen, Fragen üben und passende Kleidung wählen.
 B: Gibt es Unterschiede zur Arbeitssuche in anderen Ländern?
 A: Ja, in Deutschland ist Pünktlichkeit und Struktur sehr wichtig. Man sollte professionell auftreten.
-B: Danke für die Infos! Das hilfs mir bei meiner eigenen Jobsuche.
+B: Danke für die Infos! Das hilft mir bei meiner eigenen Jobsuche.
 A: Gern geschehen. Viel Erfolg!`,
           text_ru: `A: Я хочу рассказать о поиске работы в Германии.
 B: Хорошо. С чего начинается поиск работы там?
@@ -267,7 +270,7 @@ A: Пожалуйста. Удачи!`
           text_de: `A: Ich finde, ein erfolgreicher Bewerbungsprozess beginnt mit einer guten Vorbereitung.
 B: Da stimme ich dir zu. Man sollte sich zuerst über das Unternehmen informieren.
 A: Genau. Man sollte wissen, was die Firma macht, welche Werte sie hat und welche Anforderungen sie stellt.
-B: Und dann kommt der Lebenslauf. Der muss klar und übersichtlich sein.
+B: Und dann kommt der Lebenslauf. Der muss klar и übersichtlich sein.
 A: Ja, und man sollte relevante Erfahrungen und Fähigkeiten betonen.
 B: Was ist mit dem Anschreiben?
 A: Das ist sehr wichtig. Es sollte persönlich sein und zeigen, warum man sich gerade für diese Stelle interessiert.
@@ -332,6 +335,120 @@ A: Я действительно могу их порекомендовать �
     }
   ];
 
+  // ========== УЛУЧШЕННАЯ СИСТЕМА TTS ==========
+  const useAdvancedTTS = (logger) => {
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [availableVoices, setAvailableVoices] = useState([]);
+    const [selectedVoice, setSelectedVoice] = useState(null);
+
+    // Загрузка голосов при инициализации
+    useEffect(() => {
+      loadVoices();
+    }, []);
+
+    const loadVoices = useCallback(() => {
+      return new Promise((resolve) => {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          const germanVoices = voices.filter(voice => 
+            voice.lang.includes('de') || voice.lang.includes('DE')
+          );
+          
+          // Сортируем голоса: сначала женские, потом по качеству
+          const sortedVoices = germanVoices.sort((a, b) => {
+            const aIsFemale = a.name.toLowerCase().includes('female') || a.name.toLowerCase().includes('woman');
+            const bIsFemale = b.name.toLowerCase().includes('female') || b.name.toLowerCase().includes('woman');
+            
+            if (aIsFemale && !bIsFemale) return -1;
+            if (!aIsFemale && bIsFemale) return 1;
+            
+            // Предпочитаем более качественные голоса
+            const aQuality = a.name.includes('Google') || a.name.includes('Microsoft') ? 1 : 0;
+            const bQuality = b.name.includes('Google') || a.name.includes('Microsoft') ? 1 : 0;
+            return bQuality - aQuality;
+          });
+
+          setAvailableVoices(sortedVoices);
+          
+          // Автовыбор лучшего женского голоса
+          const bestVoice = sortedVoices[0] || voices[0];
+          setSelectedVoice(bestVoice);
+          
+          logger.log(`🎤 Загружено голосов: ${voices.length}, немецких: ${germanVoices.length}`, 'success');
+          if (bestVoice) {
+            logger.log(`🔊 Автовыбран голос: ${bestVoice.name} (${bestVoice.lang})`, 'info');
+          }
+          
+          resolve(sortedVoices);
+        } else {
+          // Ждем загрузки голосов
+          window.speechSynthesis.onvoiceschanged = () => {
+            loadVoices().then(resolve);
+          };
+        }
+      });
+    }, [logger]);
+
+    // Браузерный TTS с улучшенными настройками
+    const speak = useCallback(async (text) => {
+      if (!text || isSpeaking) return;
+
+      return new Promise((resolve, reject) => {
+        if (!('speechSynthesis' in window)) {
+          reject(new Error("Браузер не поддерживает синтез речи"));
+          return;
+        }
+
+        // Останавливаем предыдущую речь
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'de-DE';
+        utterance.rate = 0.9; // Немного медленнее для четкости
+        utterance.pitch = 1.1; // Чуть выше для женского звучания
+        utterance.volume = 1.0;
+
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+
+        utterance.onend = () => {
+          logger.log('✅ Озвучка завершена', 'success');
+          setIsSpeaking(false);
+          resolve();
+        };
+
+        utterance.onerror = (event) => {
+          logger.log(`❌ Ошибка озвучки: ${event.error}`, 'error');
+          setIsSpeaking(false);
+          reject(new Error(event.error));
+        };
+
+        utterance.onstart = () => {
+          logger.log(`🎵 Озвучка: "${text.substring(0, 30)}..."`, 'info');
+        };
+
+        setIsSpeaking(true);
+        window.speechSynthesis.speak(utterance);
+      });
+    }, [selectedVoice, isSpeaking, logger]);
+
+    // Перезагрузка голосов
+    const reloadVoices = useCallback(() => {
+      logger.log('🔄 Перезагрузка голосов...', 'info');
+      loadVoices();
+    }, [loadVoices, logger]);
+
+    return {
+      speak,
+      isSpeaking,
+      availableVoices,
+      selectedVoice,
+      setSelectedVoice,
+      reloadVoices
+    };
+  };
+
   // ========== СИСТЕМА ЛОГИРОВАНИЯ ==========
   const useLogger = () => {
     const [logs, setLogs] = useState([]);
@@ -346,9 +463,8 @@ A: Я действительно могу их порекомендовать �
         type
       };
       
-      setLogs(prev => [logEntry, ...prev].slice(0, 100)); // Храним только 100 последних записей
+      setLogs(prev => [logEntry, ...prev].slice(0, 100));
       
-      // Также выводим в консоль браузера
       const consoleMethod = type === 'error' ? 'error' : 
                            type === 'warning' ? 'warn' : 'log';
       console[consoleMethod](`[${timestamp}] ${message}`);
@@ -365,90 +481,6 @@ A: Я действительно могу их порекомендовать �
       log,
       clearLogs
     };
-  };
-
-  // ========== ПРОСТАЯ И РАБОЧАЯ ФУНКЦИЯ ОЗВУЧКИ ==========
-  const useTTS = (logger) => {
-    const [isSpeaking, setIsSpeaking] = useState(false);
-
-    const speak = useCallback(async (text) => {
-      if (!text || isSpeaking) return;
-      
-      setIsSpeaking(true);
-      logger.log(`🔊 Начинаю озвучку: "${text.substring(0, 50)}..."`, 'info');
-
-      try {
-        // Останавливаем любую текущую речь
-        if (window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-        }
-
-        return new Promise((resolve, reject) => {
-          if (!('speechSynthesis' in window)) {
-            const error = "Ваш браузер не поддерживает синтез речи";
-            logger.log(error, 'error');
-            reject(new Error(error));
-            return;
-          }
-
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.lang = 'de-DE';
-          utterance.rate = 0.9;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;
-
-          // Ждем загрузки голосов
-          const voices = window.speechSynthesis.getVoices();
-          logger.log(`📢 Доступно голосов: ${voices.length}`, 'info');
-          
-          if (voices.length === 0) {
-            logger.log('🔄 Ожидаю загрузки голосов...', 'warning');
-            window.speechSynthesis.onvoiceschanged = () => {
-              const germanVoices = window.speechSynthesis.getVoices().filter(v => v.lang.includes('de'));
-              logger.log(`🇩🇪 Немецких голосов найдено: ${germanVoices.length}`, 'info');
-              if (germanVoices.length > 0) {
-                utterance.voice = germanVoices[0];
-                logger.log(`🎤 Использую голос: ${germanVoices[0].name}`, 'success');
-              }
-              window.speechSynthesis.speak(utterance);
-            };
-          } else {
-            const germanVoices = voices.filter(v => v.lang.includes('de'));
-            logger.log(`🇩🇪 Немецких голосов найдено: ${germanVoices.length}`, 'info');
-            if (germanVoices.length > 0) {
-              utterance.voice = germanVoices[0];
-              logger.log(`🎤 Использую голос: ${germanVoices[0].name}`, 'success');
-            } else {
-              logger.log('⚠️ Немецкие голоса не найдены, использую стандартный', 'warning');
-            }
-            window.speechSynthesis.speak(utterance);
-          }
-
-          utterance.onend = () => {
-            logger.log('✅ Озвучка завершена успешно', 'success');
-            setIsSpeaking(false);
-            resolve();
-          };
-
-          utterance.onerror = (event) => {
-            const error = `Ошибка озвучки: ${event.error}`;
-            logger.log(error, 'error');
-            setIsSpeaking(false);
-            reject(new Error(error));
-          };
-
-          utterance.onstart = () => {
-            logger.log('🎵 Озвучка началась...', 'info');
-          };
-        });
-      } catch (err) {
-        logger.log(`💥 Критическая ошибка: ${err.message}`, 'error');
-        setIsSpeaking(false);
-        throw err;
-      }
-    }, [isSpeaking, logger]);
-
-    return { speak, isSpeaking };
   };
 
   // ========== КОМПОНЕНТЫ ==========
@@ -486,7 +518,85 @@ A: Я действительно могу их порекомендовать �
         <polyline points="3 6 5 6 21 6"/>
         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
       </svg>
+    ),
+    Female: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <circle cx="12" cy="4" r="2"/>
+        <path d="M16 22v-4a4 4 0 0 0-4-4h0a4 4 0 0 0-4 4v4"/>
+        <path d="M22 12h-6"/>
+        <path d="M16 8l4-4"/>
+      </svg>
+    ),
+    Refresh: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <path d="M23 4v6h-6"/>
+        <path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
     )
+  };
+
+  // Компонент выбора голоса
+  const VoiceSelector = ({ voices, selectedVoice, onSelectVoice, onReload, isSpeaking }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+      <div className="card mb-4">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Icon.Female />
+            Выбор голоса
+            {isSpeaking && <Icon.Loader className="animate-spin" />}
+          </h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+            >
+              {isExpanded ? 'Скрыть' : 'Показать'}
+            </button>
+            <button
+              onClick={onReload}
+              className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              title="Обновить список голосов"
+            >
+              <Icon.Refresh size={14} />
+            </button>
+          </div>
+        </div>
+        
+        <div className="text-sm text-gray-600 mb-2">
+          Текущий голос: <span className="font-semibold">{selectedVoice?.name || 'Стандартный'}</span>
+        </div>
+        
+        {isExpanded && (
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {voices.length === 0 ? (
+              <div className="text-gray-500 text-sm">Голоса не найдены. Нажмите "Обновить"</div>
+            ) : (
+              voices.map(voice => (
+                <div
+                  key={voice.name}
+                  className={`voice-option ${selectedVoice?.name === voice.name ? 'selected' : ''}`}
+                  onClick={() => onSelectVoice(voice)}
+                >
+                  <div className="font-medium">{voice.name}</div>
+                  <div className="text-sm text-gray-600">
+                    {voice.lang} • 
+                    {voice.name.toLowerCase().includes('female') ? ' 👩 Женский' : 
+                     voice.name.toLowerCase().includes('male') ? ' 👨 Мужской' : ' 🧑 Неизвестно'}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        
+        <div className="mt-3 text-xs text-gray-500">
+          💡 Выберите женский голос для лучшего звучания. Голоса с "Google" или "Microsoft" обычно качественнее.
+        </div>
+      </div>
+    );
   };
 
   // Компонент панели отладки
@@ -523,10 +633,6 @@ A: Я действительно могу их порекомендовать �
             ))
           )}
         </div>
-        
-        <div className="mt-3 text-xs text-gray-500">
-          💡 Эта панель показывает внутренние процессы приложения. Полезно для диагностики проблем.
-        </div>
       </div>
     );
   };
@@ -555,9 +661,9 @@ A: Я действительно могу их порекомендовать �
     const [progress, setProgress] = useState(0);
     const [completedSections, setCompletedSections] = useState(new Set());
 
-    // Инициализация системы логирования
+    // Инициализация систем
     const logger = useLogger();
-    const { speak, isSpeaking } = useTTS(logger);
+    const tts = useAdvancedTTS(logger);
     const currentDate = new Date().toLocaleDateString('de-DE');
 
     // Вспомогательные функции
@@ -568,7 +674,6 @@ A: Я действительно могу их порекомендовать �
       return text ? text.replace(/\[объект жалобы\]/g, activeTopic.de).replace(/\[Дата\]/g, currentDate) : '';
     }, [activeTopic, currentDate]);
 
-    // Функция для сборки письма с переводами
     const assembleLetterWithTranslations = useCallback(() => {
       const parts = Object.keys(selections).map(key => {
         const phrase = findPhraseById(selections[key]);
@@ -583,7 +688,6 @@ A: Я действительно могу их порекомендовать �
         };
       }).filter(Boolean);
       
-      // Добавляем имя отправителя
       parts.push({
         german: senderName,
         russian: senderName
@@ -609,13 +713,13 @@ A: Я действительно могу их порекомендовать �
       setCompletedSections(newCompleted);
     }, [selections]);
 
-    // Обработчик озвучки с обработкой ошибок
+    // Обработчик озвучки
     const handleSpeak = async (text) => {
       try {
-        await speak(text);
+        await tts.speak(text);
       } catch (err) {
         logger.log(`❌ Ошибка при озвучке: ${err.message}`, 'error');
-        alert(`Озвучка не работает: ${err.message}\n\nПроверьте консоль отладки для подробностей.`);
+        alert(`Озвучка не работает: ${err.message}`);
       }
     };
 
@@ -653,7 +757,7 @@ A: Я действительно могу их порекомендовать �
         {/* Шапка */}
         <header className="text-center">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">B2 German Exam Trainer</h1>
-          <p className="text-gray-600 mb-4">Debug Version — с консолью отладки</p>
+          <p className="text-gray-600 mb-4">Оффлайн версия с улучшенной озвучкой</p>
           
           <div className="flex justify-center gap-2 mb-4 flex-wrap">
             <button 
@@ -695,12 +799,21 @@ A: Я действительно могу их порекомендовать �
             </button>
           </div>
 
-          {isSpeaking && (
+          {tts.isSpeaking && (
             <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
-              🔊 Идет озвучка...
+              🔊 Идет озвучка... ({tts.selectedVoice?.name || 'стандартный голос'})
             </div>
           )}
         </header>
+
+        {/* Селектор голосов */}
+        <VoiceSelector
+          voices={tts.availableVoices}
+          selectedVoice={tts.selectedVoice}
+          onSelectVoice={tts.setSelectedVoice}
+          onReload={tts.reloadVoices}
+          isSpeaking={tts.isSpeaking}
+        />
 
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Левая колонка - Schreiben */}
@@ -836,11 +949,11 @@ A: Я действительно могу их порекомендовать �
                                   </button>
                                   <button
                                     onClick={() => handleSpeak(replacePlaceholders(phrase.text))}
-                                    disabled={isSpeaking}
+                                    disabled={tts.isSpeaking}
                                     className="btn-icon bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
                                     title="Озвучить"
                                   >
-                                    {isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
+                                    {tts.isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
                                   </button>
                                 </div>
                               </div>
@@ -887,10 +1000,10 @@ A: Я действительно могу их порекомендовать �
                       logger.log('📄 Начинаю озвучку всего письма', 'info');
                       handleSpeak(assembleLetter());
                     }}
-                    disabled={isSpeaking}
+                    disabled={tts.isSpeaking}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
                   >
-                    {isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
+                    {tts.isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
                     Озвучить всё письмо
                   </button>
                   
@@ -961,45 +1074,45 @@ A: Я действительно могу их порекомендовать �
                                 <div className="text-gray-600 italic mt-2 text-sm">
                                   {line.ru_text}
                                 </div>
-                              </div>
-                            </div>
-                          </div>
-                          <button
+                              </div>    
+                            </div>    
+                          </div>    
+                          <button            
                             onClick={() => {
                               logger.log(`🎤 Озвучиваю реплику: ${line.de_text.substring(0, 30)}...`, 'info');
                               handleSpeak(line.de_text);
-                            }}
-                            disabled={isSpeaking}
+                            }}            
+                            disabled={tts.isSpeaking}
                             className="btn-icon bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors ml-4"
                             title="Озвучить реплику"
                           >
-                            {isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </main>
+                            {tts.isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
+                          </button>            
+                        </div>            
+                      </div>            
+                    ))}            
+                  </div>            
+                </div>            
+              </div>            
+            )}            
+          </div>            
+        </main>            
 
         {/* Панель отладки */}
-        <DebugPanel 
+        <DebugPanel             
           logs={logger.logs} 
           onClear={logger.clearLogs}
           isVisible={logger.showDebug}
         />
 
         <footer className="text-center text-gray-500 text-sm mt-8 pt-4 border-t border-gray-200">
-          <p>B2 German Exam Trainer — Debug Version | 💡 Используйте кнопку "Показать консоль" для диагностики</p>
-        </footer>
-      </div>
-    );
+          <p>B2 German Exam Trainer — Оффлайн версия | 🔊 Улучшенная система озвучки</p>
+        </footer>            
+      </div>            
+    );            
   }
 
   ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
-</body>
-</html>
+  </script>            
+</body>            
+</html>            
