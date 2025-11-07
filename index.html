@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>B2 German Exam Trainer — Offline-ready</title>
+  <title>B2 German Exam Trainer — Premium TTS</title>
 
   <!-- Tailwind CDN (simple) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,11 +15,17 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    /* Small extra polish for the Pro style */
     body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
     .btn-icon { width: 2.25rem; height: 2.25rem; display: inline-flex; align-items:center; justify-content:center; border-radius: 9999px; }
     .card { background: white; border: 1px solid rgba(15,23,42,0.06); border-radius: 12px; padding: 1rem; box-shadow: 0 6px 20px rgba(2,6,23,0.04); }
     pre { white-space: pre-wrap; word-break: break-word; }
+    .debug-panel { background: #1a1a1a; color: #00ff00; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+    .status-good { color: #10B981; }
+    .status-bad { color: #EF4444; }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
   </style>
 </head>
 <body class="bg-gray-50 p-6">
@@ -27,22 +33,20 @@
   <div id="root" class="max-w-6xl mx-auto"></div>
 
   <script type="text/babel">
-  // B2 Trainer — Single-file React app (Pro style, Gemini TTS + fallback)
-  const { useState, useEffect, useMemo, useCallback } = React;
+  // B2 Trainer — Single-file React app (Pro style, ElevenLabs TTS + fallback)
+  const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
   /* ----------------------------
      === CONFIG ===
      ---------------------------- */
-  const API_CONFIG = {
-    MODEL: "gemini-2.5-flash-preview-tts",
-    API_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent",
-    // <-- ТВОЙ API-ключ (вставлен по просьбе)
-    API_KEY: "AIzaSyCwMwNa3CFyxfev2q40_e9jFhfgL3XUN2Q"
+  const ELEVEN_LABS_CONFIG = {
+    API_KEY: "sk_d16c6996ff71066a5da550247033cec8d72ab9e8ac821c45",
+    VOICE_ID: "21m00Tcm4TlvDq8ikWAM", // Rachel - женский голос
+    API_URL: "https://api.elevenlabs.io/v1/text-to-speech"
   };
 
   /* ----------------------------
      === DATA (Schreiben & Sprechen) ===
-     (сокращённо/структурировано — весь критичный контент сохранён)
      ---------------------------- */
 
   const SCHREIBEN_TOPICS = [
@@ -100,10 +104,160 @@ B: В какой отрасли она работает?
 A: Она разрабатывает ПО для крупных компаний.
 B: Какие отделы там есть?
 A: Разработка, маркетинг, поддержка и HR.`
+        },
+        {
+          id: '1b',
+          title_ru: 'B. Компания с хорошими условиями труда',
+          text_de: `A: Ich kenne ein Unternehmen, das ein sehr gutes Arbeitsumfeld bietet – es ist ein mittelständisches Familienunternehmen.
+B: Was macht das Arbeitsumfeld dort so gut?
+A: Die Atmosphäre ist freundlich und respektvoll. Die Mitarbeiter arbeiten gern zusammen.
+B: Und wie sieht es mit dem Gehalt aus?
+A: Die Löhne sind fair und es gibt regelmäßige Gehaltserhöhungen.
+B: Gibt es auch Karrierechancen?
+A: Ja, man kann sich intern weiterentwickeln und bekommt Unterstützung bei Fortbildungen.`,
+          text_ru: `A: Я знаю компанию с очень хорошими условиями труда — это средняя семейная фирма.
+B: Что делает условия труда там такими хорошими?
+A: Атмосфера дружелюбная и уважительная. Сотрудники охотно работают вместе.
+B: А как обстоят дела с зарплатой?
+A: Зарплаты справедливые, и регулярно происходят повышения.
+B: Есть ли возможности карьерного роста?
+A: Да, можно развиваться внутри компании и получать поддержку в обучении.`
         }
       ]
     },
-    // Можно добавить больше тем — в файле репозитория у тебя полный список
+    {
+      id: 'thema2',
+      title_ru: 'Тема 2: События и опыт, повлиявшие на выбор профессии',
+      title_de: 'Thema 2: Ereignisse und Erfahrungen, die Ihre Berufswahl beeinflusst haben',
+      dialogues: [
+        {
+          id: '2a',
+          title_ru: 'A. Детский интерес к технике',
+          text_de: `A: Ich habe mich für meinen Beruf entschieden, weil ich schon als Kind großes Interesse an Technik hatte.
+B: Das ist spannend. Gab es ein besonderes Erlebnis, das dich beeinflusst hat?
+A: Ja, ich habe in der Schule ein Projekt gemacht, bei dem wir einen kleinen Roboter gebaut haben.
+B: Klingt cool! Hat dir das Projekt Spaß gemacht?
+A: Sehr! Ich habe gemerkt, dass ich kreativ bin und gerne Probleme löse.
+B: Hast du auch ein Praktikum gemacht?
+A: Ja, ich war zwei Wochen in einem IT-Unternehmen. Ich durfte bei echten Projekten mitarbeiten.`,
+          text_ru: `A: Я выбрал свою профессию, потому что с детства интересовался техникой.
+B: Это интересно. Было ли какое-то особенное событие, которое на тебя повлияло?
+A: Да, в школе я участвовал в проекте, где мы собирали маленького робота.
+B: Звучит круто! Тебе понравился этот проект?
+A: Очень! Я понял, что я креативный и люблю решать задачи.
+B: Ты проходил практику?
+A: Да, я был две недели в IT-компании. Мне разрешили участвовать в реальных проектах.`
+        }
+      ]
+    },
+    {
+      id: 'thema3',
+      title_ru: 'Тема 3: Человек, повлиявший на выбор профессии',
+      title_de: 'Thema 3: Eine Person, die Ihre Berufswahl beeinflusst hat',
+      dialogues: [
+        {
+          id: '3a',
+          title_ru: 'A. Влияние старшего брата',
+          text_de: `A: Ich möchte über meinen älteren Bruder sprechen. Er hat meine Berufswahl stark beeinflusst.
+B: Interessant! Was macht dein Bruder beruflich?
+A: Er ist Grafikdesigner in einer Werbeagentur. Schon als Kind hat he viel gezeichnet und war sehr kreativ.
+B: Und wie hat er dich beeinflusst?
+A: Er hat mir gezeigt, wie spannend kreative Berufe sein können. Ich habe durch ihn angefangen, mit Designprogrammen zu arbeiten.
+B: Habt ihr auch gemeinsam Projekte gemacht?
+A: Ja, wir haben zusammen ein Logo für ein Schulprojekt entworfen. Das hat mir großen Spaß gemacht.`,
+          text_ru: `A: Я хочу рассказать о своем старшем брате. Он сильно повлиял на мой выбор профессии.
+B: Интересно! Кем работает твой брат?
+A: Он графический дизайнер в рекламном агентстве. Еще в детстве он много рисовал и был очень креативным.
+B: А как он повлиял на тебя?
+A: Он показал мне, насколько интересными могут быть творческие профессии. Благодаря ему я начал работать с дизайнерскими программами.
+B: Вы делали совместные проекты?
+A: Да, мы вместе разработали логотип для школьного проекта. Это доставило мне большое удовольствие.`
+        }
+      ]
+    },
+    {
+      id: 'thema4',
+      title_ru: 'Тема 4: Поиск работы в другой стране',
+      title_de: 'Thema 4: Arbeitssuche in einem Land Ihrer Wahl',
+      dialogues: [
+        {
+          id: '4a',
+          title_ru: 'A. Поиск работы в Германии',
+          text_de: `A: Ich möchte über die Arbeitssuche in Deutschland sprechen.
+B: Okay. Wie beginnt man dort mit der Jobsuche?
+A: Zuerst sucht man online nach Stellenangeboten – zum Beispiel auf Webseiten wie StepStone oder Indeed.
+B: Und was macht man, wenn man ein interessantes Angebot findet?
+A: Man sollte sich gut über die Firma informieren und dann eine Bewerbung schreiben.
+B: Was gehört zu einer Bewerbung in Deutschland?
+A: Ein Lebenslauf, ein Anschreiben und oft auch Zeugnisse oder Zertifikate.
+B: Und wie läuft der Erstkontakt ab?
+A: Man schickt die Bewerbung per E-Mail oder über ein Online-Formular. Danach bekommt man eine Antwort.`,
+          text_ru: `A: Я хочу рассказать о поиске работы в Германии.
+B: Хорошо. С чего начинается поиск работы там?
+A: Сначала ищут вакансии онлайн — например, на сайтах вроде StepStone или Indeed.
+B: А что делать, если найдена интересная вакансия?
+A: Нужно хорошо узнать информацию о компании и затем написать заявление.
+B: Что входит в заявление о приеме на работу в Германии?
+A: Резюме, сопроводительное письмо и часто — дипломы или сертификаты.
+B: А как происходит первый контакт?
+A: Заявление отправляется по электронной почте или через онлайн-форму. Затем приходит ответ.`
+        }
+      ]
+    },
+    {
+      id: 'thema5',
+      title_ru: 'Тема 5: Процесс подачи заявки',
+      title_de: 'Thema 5: Worauf es bei einem Bewerbungsprozess ankommt',
+      dialogues: [
+        {
+          id: '5a',
+          title_ru: 'A. Подготовка к собеседованию',
+          text_de: `A: Ich finde, ein erfolgreicher Bewerbungsprozess beginnt mit einer guten Vorbereitung.
+B: Da stimme ich dir zu. Man sollte sich zuerst über das Unternehmen informieren.
+A: Genau. Man sollte wissen, was die Firma macht, welche Werte sie hat und welche Anforderungen sie stellt.
+B: Und dann kommt der Lebenslauf. Der muss klar und übersichtlich sein.
+A: Ja, und man sollte relevante Erfahrungen und Fähigkeiten betonen.
+B: Was ist mit dem Anschreiben?
+A: Das ist sehr wichtig. Es sollte persönlich sein und zeigen, warum man sich gerade für diese Stelle interessiert.`,
+          text_ru: `A: Я считаю, что успешный процесс подачи заявки начинается с хорошей подготовки.
+B: Согласен с тобой. Сначала нужно узнать информацию о компании.
+A: Именно. Нужно знать, чем занимается фирма, какие у неё ценности и какие требования она предъявляет.
+B: А затем идёт резюме. Оно должно быть чётким и понятным.
+A: Да, и нужно подчеркнуть соответствующий опыт и навыки.
+B: А как насчёт сопроводительного письма?
+A: Это очень важно. Оно должно быть личным и показывать, почему ты заинтересован именно в этой должности.`
+        }
+      ]
+    },
+    {
+      id: 'thema6',
+      title_ru: 'Тема 6: Описание продукта или услуги',
+      title_de: 'Thema 6: Ein Produkt / eine Dienstleistung Ihrer Wahl',
+      dialogues: [
+        {
+          id: '6a',
+          title_ru: 'A. Беспроводные наушники',
+          text_de: `A: Ich möchte ein Produkt beschreiben, das ich täglich benutze – meine kabellosen Kopfhörer.
+B: Interessant! Was sind die wichtigsten Merkmale?
+A: Sie sind leicht, haben eine gute Klangqualität und eine lange Akkulaufzeit – bis zu 30 Stunden.
+B: Und wie funktioniert die Verbindung?
+A: Über Bluetooth. Die Verbindung ist stabil und funktioniert auch mit mehreren Geräten.
+B: Was ist der Nutzen für die Kunden?
+A: Man kann Musik hören, telefonieren oder Podcasts hören – alles ohne Kabel.
+B: Gibt es auch Nachteile?
+A: Ja, sie sind teurer als kabelgebundene Kopfhörer und man muss sie regelmäßig aufladen.`,
+          text_ru: `A: Я хочу описать продукт, который использую каждый день — мои беспроводные наушники.
+B: Интересно! Какие основные характеристики?
+A: Они лёгкие, имеют хорошее качество звука и долго держат заряд — до 30 часов.
+B: А как работает подключение?
+A: Через Bluetooth. Подключение стабильное и работает даже с несколькими устройствами.
+B: Какова польза для клиентов?
+A: Можно слушать музыку, разговаривать по телефону или слушать подкасты — всё без проводов.
+B: Есть ли недостатки?
+A: Да, они дороже, чем проводные наушники, и их нужно регулярно заряжать.`
+        }
+      ]
+    }
   ];
 
   const initialActiveScenario = SPRECHEN_SCENARIOS[0];
@@ -112,92 +266,123 @@ A: Разработка, маркетинг, поддержка и HR.`
      === UTILS: TTS & audio helpers ===
      ---------------------------- */
 
-  // Base64 -> ArrayBuffer
-  function base64ToArrayBuffer(base64) {
+  // Кэш для TTS аудио
+  const ttsCache = new Map();
+  let lastRequestTime = 0;
+
+  // ElevenLabs TTS function - УЛУЧШЕННАЯ ВЕРСИЯ
+  async function callElevenLabsTTS(text, voice_id = ELEVEN_LABS_CONFIG.VOICE_ID) {
+    const apiKey = ELEVEN_LABS_CONFIG.API_KEY;
+    
+    if (!apiKey) {
+      throw new Error("❌ ElevenLabs API key missing");
+    }
+
+    console.log("🔧 Sending to ElevenLabs:", text);
+
     try {
-      const binary = atob(base64);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes.buffer;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function pcmToWav(pcm16, sampleRate = 24000) {
-    const numChannels = 1;
-    const bytesPerSample = 2;
-    const wavBuffer = new ArrayBuffer(44 + pcm16.length * bytesPerSample);
-    const view = new DataView(wavBuffer);
-    let offset = 0;
-    function writeString(str) {
-      for (let i = 0; i < str.length; i++) view.setUint8(offset++, str.charCodeAt(i));
-    }
-    writeString('RIFF'); view.setUint32(offset, 36 + pcm16.length * bytesPerSample, true); offset += 4;
-    writeString('WAVE');
-    writeString('fmt '); view.setUint32(offset, 16, true); offset += 4;
-    view.setUint16(offset, 1, true); offset += 2; // PCM
-    view.setUint16(offset, numChannels, true); offset += 2;
-    view.setUint32(offset, sampleRate, true); offset += 4;
-    view.setUint32(offset, sampleRate * numChannels * bytesPerSample, true); offset += 4;
-    view.setUint16(offset, numChannels * bytesPerSample, true); offset += 2;
-    view.setUint16(offset, bytesPerSample * 8, true); offset += 2;
-    writeString('data'); view.setUint32(offset, pcm16.length * bytesPerSample, true); offset += 4;
-    for (let i = 0; i < pcm16.length; i++) { view.setInt16(offset, pcm16[i], true); offset += 2; }
-    return new Blob([wavBuffer], { type: 'audio/wav' });
-  }
-
-  // Функция: попытаться получить TTS через Gemini API
-  async function callGeminiTTS(text, voice = "Fenrir", apiKey = API_CONFIG.API_KEY) {
-    if (!apiKey) throw new Error("API key missing");
-    const payload = {
-      contents: [{ parts: [{ text }] }],
-      generationConfig: {
-        responseModalities: ["AUDIO"],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voice }
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, {
+        method: "POST",
+        headers: {
+          "Accept": "audio/mpeg",
+          "Content-Type": "application/json",
+          "xi-api-key": apiKey
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.5
           }
+        })
+      });
+
+      console.log("📡 ElevenLabs status:", response.status);
+
+      if (!response.ok) {
+        let errorText = "Unknown error";
+        try {
+          errorText = await response.text();
+        } catch (e) {}
+        
+        console.error("❌ ElevenLabs error:", response.status, errorText);
+        
+        // Проверяем конкретные ошибки API
+        if (response.status === 401) {
+          throw new Error("Неверный API ключ ElevenLabs");
+        } else if (response.status === 429) {
+          throw new Error("Превышен лимит запросов к ElevenLabs");
+        } else {
+          throw new Error(`ElevenLabs error: ${response.status}`);
         }
-      },
-      model: API_CONFIG.MODEL
-    };
+      }
 
-    const res = await fetch(`${API_CONFIG.API_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const raw = await res.text();
-    if (!raw) throw new Error(`Empty response, status ${res.status}`);
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch (e) { throw new Error("Non-JSON response from TTS API"); }
-
-    if (!res.ok) {
-      const msg = parsed?.error?.message || `HTTP ${res.status}`;
-      throw new Error(msg);
+      const audioBlob = await response.blob();
+      console.log("✅ ElevenLabs audio blob type:", audioBlob.type, "size:", audioBlob.size, "bytes");
+      
+      // Проверяем тип blob
+      if (audioBlob.size === 0) {
+        throw new Error("Пустой аудиофайл от ElevenLabs");
+      }
+      
+      const audioUrl = URL.createObjectURL(audioBlob);
+      return { url: audioUrl };
+      
+    } catch (error) {
+      console.error("💥 ElevenLabs failed:", error);
+      throw error;
     }
-
-    // Ожидаем структуру: parsed.candidates[0].content.parts[0].inlineData.data
-    const part = parsed?.candidates?.[0]?.content?.parts?.[0];
-    const base64 = part?.inlineData?.data;
-    const mime = part?.inlineData?.mimeType || "";
-    if (!base64) throw new Error("No audio data in response");
-    return { base64, mime };
   }
 
-  // Fallback: Web Speech API (if available). Returns Promise that resolves when finished.
+  // Fallback: Web Speech API
   function speakWithWebSpeech(text, lang = "de-DE") {
     return new Promise((resolve, reject) => {
-      if (!("speechSynthesis" in window)) return reject(new Error("SpeechSynthesis not supported"));
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang;
-      u.onend = () => resolve();
-      u.onerror = (e) => reject(e);
-      window.speechSynthesis.cancel(); // stop previous
-      window.speechSynthesis.speak(u);
+      if (!("speechSynthesis" in window)) {
+        return reject(new Error("SpeechSynthesis not supported"));
+      }
+      
+      // Даем время на инициализацию голосов
+      if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.addEventListener('voiceschanged', () => {
+          speakWithWebSpeech(text, lang).then(resolve).catch(reject);
+        });
+        return;
+      }
+      
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      utterance.rate = 0.8; // Медленнее для лучшего понимания
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      // Ищем немецкий голос
+      const voices = window.speechSynthesis.getVoices();
+      const germanVoice = voices.find(voice => 
+        voice.lang.includes('de') || voice.lang === 'de-DE' || voice.lang === 'de'
+      );
+      
+      if (germanVoice) {
+        utterance.voice = germanVoice;
+        console.log("✅ Using German voice:", germanVoice.name);
+      } else {
+        console.log("⚠️ No German voice found, using default");
+      }
+      
+      utterance.onend = () => {
+        console.log("✅ Web Speech finished");
+        resolve();
+      };
+      
+      utterance.onerror = (e) => {
+        console.error("❌ Web Speech error:", e);
+        reject(new Error(`Speech error: ${e.error}`));
+      };
+      
+      console.log("🔊 Starting Web Speech...");
+      window.speechSynthesis.speak(utterance);
     });
   }
 
@@ -223,15 +408,19 @@ A: Разработка, маркетинг, поддержка и HR.`
         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="31.4 31.4" strokeLinecap="round"></circle>
       </svg>
     ),
-    Edit: (props) => (
+    Bug: (props) => (
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <path d="M12 20h9"></path>
-        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"></path>
+        <path d="M8 2v2M16 2v2M12 2v4M12 18v4M8 22h8M18 8h2M4 8h2M18 8v4a6 6 0 0 1-6 6h0a6 6 0 0 1-6-6V8M4 8h16"></path>
       </svg>
     ),
-    Message: (props) => (
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    Check: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M20 6L9 17l-5-5"></path>
+      </svg>
+    ),
+    Star: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" strokeWidth="1" {...props}>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
       </svg>
     )
   };
@@ -241,11 +430,8 @@ A: Разработка, маркетинг, поддержка и HR.`
      ---------------------------- */
 
   function App() {
-    // default view: Schreiben (as requested)
-    const [view, setView] = useState('schreiben'); // 'schreiben' or 'sprechen'
-
-    // Schreiben state
-    const initialSelections = useMemo(() => ({
+    const [view, setView] = useState('schreiben');
+    const [selections, setSelections] = useState(useMemo(() => ({
       greetings: PHRASES_DATA.greetings[0].id,
       issue_intro: PHRASES_DATA.issue_intro[0].id,
       main_problem: PHRASES_DATA.main_problem[0].id,
@@ -254,33 +440,40 @@ A: Разработка, маркетинг, поддержка и HR.`
       resolution_request: PHRASES_DATA.resolution_request[0].id,
       closing_formula: PHRASES_DATA.closing_formula[0].id,
       sign_off: PHRASES_DATA.sign_off[0].id,
-    }), []);
-
-    const [selections, setSelections] = useState(initialSelections);
+    }), []));
     const [activeTopic, setActiveTopic] = useState(SCHREIBEN_TOPICS[0]);
     const [senderName, setSenderName] = useState("Ivan Ivanov");
     const [invoiceNumber, setInvoiceNumber] = useState("RE-2024-5829");
     const [currentDate] = useState(new Date().toLocaleDateString('de-DE'));
-
-    // Sprechen state
     const [activeScenario, setActiveScenario] = useState(initialActiveScenario);
     const [activeDialogue, setActiveDialogue] = useState(initialActiveScenario.dialogues[0]);
-
-    // audio & tts state
     const [audioUrl, setAudioUrl] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [debugLog, setDebugLog] = useState([]);
+    const [showDebug, setShowDebug] = useState(false);
+    const [ttsStatus, setTtsStatus] = useState("unknown");
+    const [progress, setProgress] = useState(0);
+    const [completedSections, setCompletedSections] = useState(new Set());
+    const [premiumMode, setPremiumMode] = useState(false);
+    const audioRef = useRef(null);
 
-    // helper: find phrase by id
+    const addDebugLog = (message, type = "info") => {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `${timestamp}: ${message}`;
+      console.log(`[${type.toUpperCase()}] ${logEntry}`);
+      setDebugLog(prev => [...prev, {message: logEntry, type}].slice(-20));
+    };
+
     const allPhrases = useMemo(() => Object.values(PHRASES_DATA).flat(), []);
-    const findPhraseById = (id) => allPhrases.find(p => p.id === id);
+    const findPhraseById = useCallback((id) => allPhrases.find(p => p.id === id), [allPhrases]);
 
     const replacePlaceholder = useCallback((text) => {
       if (!text) return '';
       return text.replace(/\[объект жалобы\]/g, activeTopic.de).replace(/\[Дата\]/g, currentDate);
     }, [activeTopic, currentDate]);
 
-    function assembleLetterText() {
+    const assembleLetterText = useCallback(() => {
       const parts = [
         replacePlaceholder(findPhraseById(selections.greetings)?.text || ''),
         replacePlaceholder(findPhraseById(selections.issue_intro)?.text || ''),
@@ -293,43 +486,99 @@ A: Разработка, маркетинг, поддержка и HR.`
         senderName
       ];
       return parts.filter(Boolean).join("\n\n");
-    }
+    }, [selections, activeTopic, currentDate, senderName, findPhraseById, replacePlaceholder]);
 
-    // --- TTS orchestration: try Gemini, if fails -> Web Speech fallback ---
-    const speakText = async (text, voice = "Fenrir") => {
+    const speakText = async (text) => {
       setError(null);
       if (!text || text.trim().length === 0) return;
+      
       setIsLoading(true);
       setAudioUrl(null);
 
-      // First: try Gemini
-      try {
-        const { base64, mime } = await callGeminiTTS(text, voice, API_CONFIG.API_KEY);
-        const arrBuf = base64ToArrayBuffer(base64);
-        if (!arrBuf) throw new Error("Cannot decode base64 audio");
-        const pcm = new Int16Array(arrBuf);
-        const wavBlob = pcmToWav(pcm, 24000);
-        const url = URL.createObjectURL(wavBlob);
-        setAudioUrl(url);
-        // auto-play
-        const a = new Audio(url);
-        await a.play().catch(e => console.warn("Play error:", e));
-      } catch (gErr) {
-        // fallback to Web Speech
-        console.warn("Gemini TTS failed, fallback to Web Speech:", gErr);
-        try {
-          await speakWithWebSpeech(text, "de-DE");
-        } catch (wsErr) {
-          console.error("WebSpeech failed:", wsErr);
-          setError("Озвучивание недоступно (проверьте интернет или настройки браузера).");
+      addDebugLog(`🔊 START: "${text.substring(0, 30)}..."`, "info");
+
+      // 🔥 ПРЕМИУМ РЕЖИМ: сначала ElevenLabs
+      if (premiumMode) {
+        addDebugLog("🎵 PREMIUM MODE: Trying ElevenLabs first...", "info");
+        
+        const cacheKey = `${text}-elevenlabs`;
+        
+        // 🔧 ЗАДЕРЖКА МЕЖДУ ЗАПРОСАМИ
+        const now = Date.now();
+        const timeSinceLastRequest = now - lastRequestTime;
+        if (timeSinceLastRequest < 1000) {
+          addDebugLog(`⏳ Waiting ${1000 - timeSinceLastRequest}ms...`, "info");
+          await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastRequest));
         }
+        lastRequestTime = Date.now();
+
+        // ✅ ПРОВЕРКА КЭША
+        if (ttsCache.has(cacheKey)) {
+          addDebugLog("✅ Using CACHED premium audio", "success");
+          const cachedUrl = ttsCache.get(cacheKey);
+          setAudioUrl(cachedUrl);
+          
+          try {
+            const audio = new Audio(cachedUrl);
+            audioRef.current = audio;
+            await audio.play();
+            setTtsStatus("elevenlabs_cached");
+            setIsLoading(false);
+            return;
+          } catch (playError) {
+            addDebugLog(`❌ Cached audio play error: ${playError.message}`, "error");
+            // Продолжаем к новому запросу
+          }
+        }
+
+        // Новый запрос к ElevenLabs
+        try {
+          addDebugLog("🔄 Calling ElevenLabs Premium...", "info");
+          setTtsStatus("loading");
+          
+          const { url } = await callElevenLabsTTS(text);
+          
+          setAudioUrl(url);
+          ttsCache.set(cacheKey, url);
+          addDebugLog("✅ ElevenLabs PREMIUM SUCCESS!", "success");
+          
+          // Пробуем воспроизвести
+          try {
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            await audio.play();
+            setTtsStatus("elevenlabs");
+            setIsLoading(false);
+            return;
+          } catch (playError) {
+            addDebugLog(`❌ ElevenLabs audio play error: ${playError.message}`, "error");
+            setTtsStatus("elevenlabs_created");
+            // Продолжаем к Web Speech
+          }
+          
+        } catch (err) {
+          addDebugLog(`💥 ElevenLabs failed: ${err.message}`, "error");
+          // Продолжаем к Web Speech
+        }
+      }
+
+      // Fallback: Web Speech API
+      addDebugLog("🔄 Falling back to Web Speech API...", "info");
+      
+      try {
+        await speakWithWebSpeech(text, "de-DE");
+        setTtsStatus("web_speech");
+      } catch (wsErr) {
+        addDebugLog(`💥 All TTS failed: ${wsErr.message}`, "error");
+        setTtsStatus("error");
+        setError(`Озвучивание недоступно: ${wsErr.message}`);
       } finally {
         setIsLoading(false);
       }
     };
 
     // Sprechen: parse dialogue lines (DE / RU)
-    const parseDialogueLines = (deText, ruText) => {
+    const parseDialogueLines = useCallback((deText, ruText) => {
       const deLines = (deText || "").split('\n').map(l => l.trim()).filter(Boolean);
       const ruLines = (ruText || "").split('\n').map(l => l.trim()).filter(Boolean);
       return deLines.map((de, i) => {
@@ -337,206 +586,360 @@ A: Разработка, маркетинг, поддержка и HR.`
         const speaker = speakerMatch ? speakerMatch[0] : "A:";
         const de_text = de.replace(/^(A:|B:)\s*/, '');
         const ru_text = ruLines[i] ? ruLines[i].replace(/^(A:|B:)\s*/, '') : '';
-        return { id: i, speaker, de_text, ru_text, voice: speaker === "A:" ? "Kore" : "Puck" };
+        return { id: i, speaker, de_text, ru_text };
       });
-    };
+    }, []);
 
-    // parsed dialogue for UI
-    const parsedDialogue = useMemo(() => parseDialogueLines(activeDialogue.text_de, activeDialogue.text_ru), [activeDialogue]);
+    const parsedDialogue = useMemo(() => parseDialogueLines(activeDialogue.text_de, activeDialogue.text_ru), [activeDialogue, parseDialogueLines]);
 
-    // Clean up object URLs
+    // Calculate progress for Schreiben
     useEffect(() => {
-      return () => { if (audioUrl) URL.revokeObjectURL(audioUrl); };
+      if (view === 'schreiben') {
+        const totalSections = Object.keys(selections).length;
+        const completed = Object.keys(selections).filter(key => 
+          selections[key] !== undefined
+        ).length;
+        setProgress(Math.round((completed / totalSections) * 100));
+        
+        // Update completed sections
+        const newCompleted = new Set();
+        Object.keys(selections).forEach(key => {
+          if (selections[key] !== undefined) {
+            newCompleted.add(key);
+          }
+        });
+        setCompletedSections(newCompleted);
+      }
+    }, [selections, view]);
+
+    // Проверка API ключа при загрузке
+    useEffect(() => {
+      const checkApiKey = async () => {
+        if (ELEVEN_LABS_CONFIG.API_KEY && ELEVEN_LABS_CONFIG.API_KEY.length > 10) {
+          addDebugLog("✅ Valid ElevenLabs API key detected", "success");
+          setPremiumMode(true);
+          
+          // Тестируем ключ с коротким запросом
+          try {
+            addDebugLog("🧪 Testing API key...", "info");
+            await callElevenLabsTTS("Test");
+            addDebugLog("🎉 API key works! Premium mode activated", "success");
+          } catch (e) {
+            addDebugLog(`⚠️ API key test failed: ${e.message}`, "warning");
+            setPremiumMode(false);
+          }
+        } else {
+          addDebugLog("❌ No valid API key found", "error");
+          setPremiumMode(false);
+        }
+      };
+
+      checkApiKey();
+    }, []);
+
+    useEffect(() => {
+      // Проверка поддержки аудио
+      const audio = new Audio();
+      const canPlayMP3 = audio.canPlayType('audio/mpeg');
+      console.log("MP3 support:", canPlayMP3);
+      
+      if (canPlayMP3 === '') {
+        addDebugLog("⚠️ MP3 may not be supported", "warning");
+      }
+
+      return () => { 
+        ttsCache.forEach(url => URL.revokeObjectURL(url));
+        ttsCache.clear();
+        if (audioUrl) URL.revokeObjectURL(audioUrl); 
+      };
     }, [audioUrl]);
 
-    // UI rendering
     return (
       <div className="space-y-6">
         <header className="text-center mb-4">
           <h1 className="text-3xl font-extrabold text-blue-800">B2 German Exam Trainer</h1>
-          <p className="text-sm text-gray-600">Schreiben & Sprechen — Pro style</p>
+          <p className="text-sm text-gray-600">Schreiben & Sprechen — {premiumMode ? "🎵 Premium TTS" : "🔇 Basic TTS"}</p>
+          
+          {/* TTS Status Indicator */}
+          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-2 ${
+            ttsStatus === "elevenlabs" || ttsStatus === "elevenlabs_cached" ? "bg-green-100 text-green-800 pulse" :
+            ttsStatus === "web_speech" ? "bg-yellow-100 text-yellow-800" :
+            ttsStatus === "loading" ? "bg-blue-100 text-blue-800" :
+            ttsStatus === "error" ? "bg-red-100 text-red-800" :
+            "bg-gray-100 text-gray-800"
+          }`}>
+            {premiumMode && ttsStatus === "elevenlabs" && <Icon.Star className="mr-1 text-yellow-500" />}
+            {ttsStatus === "elevenlabs" && "🎵 Качественный голос (ElevenLabs)"}
+            {ttsStatus === "elevenlabs_cached" && "⚡ Кэшированный голос (ElevenLabs)"}
+            {ttsStatus === "web_speech" && "🔇 Механический голос (Web Speech)"}
+            {ttsStatus === "loading" && "🔄 Загрузка..."}
+            {ttsStatus === "error" && "❌ Ошибка TTS"}
+            {ttsStatus === "unknown" && (premiumMode ? "🎵 Premium Mode Ready" : "🔇 Basic Mode")}
+          </div>
+
+          {/* Premium Mode Indicator */}
+          {premiumMode && (
+            <div className="mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full inline-flex items-center">
+              <Icon.Star className="mr-2" />
+              <span className="font-semibold">Premium Mode Active</span>
+            </div>
+          )}
         </header>
 
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-4 gap-4 flex-wrap">
           <div className="inline-flex bg-white rounded-xl shadow p-1">
             <button
               onClick={() => setView('schreiben')}
               className={`px-5 py-2 rounded-lg font-semibold ${view === 'schreiben' ? 'bg-blue-700 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
             >
-              <span className="inline-flex items-center mr-2"><svg className="w-4 h-4 mr-1" viewBox="0 0 24 24"><path d="M3 21v-2a4 4 0 0 1 4-4h10" stroke="currentColor" strokeWidth="1.6" fill="none"/></svg></span>
               Schreiben
             </button>
             <button
               onClick={() => setView('sprechen')}
               className={`px-5 py-2 rounded-lg font-semibold ${view === 'sprechen' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
             >
-              <span className="inline-flex items-center mr-2"><svg className="w-4 h-4 mr-1" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.6" fill="none"/></svg></span>
               Sprechen
             </button>
           </div>
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className={`px-4 py-2 rounded-lg font-semibold ${showDebug ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            <Icon.Bug className="inline mr-2" />
+            {showDebug ? "Скрыть Debug" : "Показать Debug"}
+          </button>
+          <button 
+            className="px-4 py-2 bg-purple-600 text-white rounded flex items-center"
+            onClick={() => speakText("Hallo, das ist ein Test mit Premium TTS. Привет, это тест премиум озвучки.")}
+          >
+            <Icon.Volume className="mr-2" />
+            Тест озвучки
+          </button>
         </div>
+
+        {showDebug && (
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">TTS Debug Panel</h3>
+            <div className="debug-panel">
+              {debugLog.map((log, i) => (
+                <div key={i} className={log.type === "error" ? "text-red-400" : log.type === "success" ? "text-green-400" : log.type === "warning" ? "text-yellow-400" : "text-gray-300"}>
+                  {log.message}
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 text-sm text-gray-600">
+              💡 <strong className="text-green-400">ElevenLabs</strong> = качественный голос | <strong className="text-yellow-400">Web Speech</strong> = механический голос
+              {premiumMode && <span className="text-purple-500 font-semibold"> | 🎵 PREMIUM MODE ACTIVE</span>}
+            </div>
+          </div>
+        )}
 
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT column: controls (Schreiben) */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">1. Выбор темы</h3>
-              <select
-                value={activeTopic.id}
-                onChange={(e) => setActiveTopic(SCHREIBEN_TOPICS.find(t => t.id === e.target.value))}
-                className="w-full p-3 rounded border border-gray-200"
-              >
-                {SCHREIBEN_TOPICS.map(t => <option key={t.id} value={t.id}>{t.ru} — {t.de}</option>)}
-              </select>
+          {view === 'schreiben' && (
+            <div className="lg:col-span-1 space-y-4">
+              <div className="card">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">1. Выбор темы</h3>
+                <select
+                  value={activeTopic.id}
+                  onChange={(e) => setActiveTopic(SCHREIBEN_TOPICS.find(t => t.id === e.target.value))}
+                  className="w-full p-3 rounded border border-gray-200"
+                >
+                  {SCHREIBEN_TOPICS.map(t => <option key={t.id} value={t.id}>{t.ru} — {t.de}</option>)}
+                </select>
 
-              <div className="mt-4">
-                <label className="block text-sm text-gray-600">Ваше Имя</label>
-                <input className="w-full p-2 mt-1 border rounded" value={senderName} onChange={e => setSenderName(e.target.value)} />
-              </div>
+                <div className="mt-4">
+                  <label className="block text-sm text-gray-600">Ваше Имя</label>
+                  <input className="w-full p-2 mt-1 border rounded" value={senderName} onChange={e => setSenderName(e.target.value)} />
+                </div>
 
-              <div className="mt-3">
-                <label className="block text-sm text-gray-600">Номер счёта / заказа</label>
-                <input className="w-full p-2 mt-1 border rounded" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} />
-              </div>
+                <div className="mt-3">
+                  <label className="block text-sm text-gray-600">Номер счёта / заказа</label>
+                  <input className="w-full p-2 mt-1 border rounded" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} />
+                </div>
 
-              <div className="mt-4">
-                <button className="w-full bg-green-600 text-white py-2 rounded flex items-center justify-center" onClick={() => {
-                  // randomize selections
-                  const newSel = Object.keys(PHRASES_DATA).reduce((acc, key) => {
-                    const items = PHRASES_DATA[key];
-                    acc[key] = items[Math.floor(Math.random()*items.length)].id;
-                    return acc;
-                  }, {});
-                  setSelections(newSel);
-                }}>
-                  <Icon.Refresh className="mr-2" /> Случайная комбинация
-                </button>
-              </div>
-            </div>
-
-            <div className="card">
-              <h3 className="text-lg font-semibold mb-2">2. Фразы (выбери по очереди)</h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                {Object.keys(PHRASES_DATA).map(categoryKey => (
-                  <div key={categoryKey}>
-                    <div className="text-sm font-semibold text-gray-700 mb-2">
-                      {categoryKey === 'greetings' && '1. Приветствие'}
-                      {categoryKey === 'issue_intro' && '2. Введение / Ссылка'}
-                      {categoryKey === 'main_problem' && '3. Суть проблемы'}
-                      {categoryKey === 'problem_consequence' && '4. Последствия'}
-                      {categoryKey === 'evidence' && '5. Документы / срок'}
-                      {categoryKey === 'resolution_request' && '6. Запрос решения'}
-                      {categoryKey === 'closing_formula' && '7. Заключение'}
-                      {categoryKey === 'sign_off' && '8. Подпись'}
-                    </div>
-                    <div className="space-y-2">
-                      {PHRASES_DATA[categoryKey].map(phrase => {
-                        const active = selections[categoryKey] === phrase.id;
-                        return (
-                          <div key={phrase.id} className={`p-3 rounded ${active ? 'bg-blue-50 border-2 border-blue-200' : 'bg-gray-50 border border-gray-100' } flex justify-between items-start`}>
-                            <div>
-                              <div className="font-medium">{replacePlaceholder(phrase.text)}</div>
-                              <div className="text-sm text-gray-500 mt-1 italic">{phrase.ru}</div>
-                            </div>
-                            <div className="ml-3 flex flex-col items-end">
-                              <button className="btn-icon bg-white border p-1 mb-2" title="Выбрать" onClick={() => {
-                                setSelections(prev => ({ ...prev, [categoryKey]: phrase.id }));
-                              }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M20 6L9 17l-5-5"/></svg>
-                              </button>
-                              <button className="btn-icon bg-blue-600 text-white p-1" title="Озвучить" onClick={() => speakText(replacePlaceholder(phrase.text), "Fenrir")}>
-                                {isLoading ? <Icon.Loader /> : <Icon.Volume />}
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                {/* Progress indicator */}
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Прогресс составления письма:</span>
+                    <span>{progress}%</span>
                   </div>
-                ))}
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <button className="w-full bg-green-600 text-white py-2 rounded flex items-center justify-center" onClick={() => {
+                    const newSel = Object.keys(PHRASES_DATA).reduce((acc, key) => {
+                      const items = PHRASES_DATA[key];
+                      acc[key] = items[Math.floor(Math.random()*items.length)].id;
+                      return acc;
+                    }, {});
+                    setSelections(newSel);
+                  }}>
+                    <Icon.Refresh className="mr-2" /> Случайная комбинация
+                  </button>
+                </div>
+              </div>
+
+              <div className="card">
+                <h3 className="text-lg font-semibold mb-2">2. Фразы (выбери по очереди)</h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  {Object.keys(PHRASES_DATA).map(categoryKey => {
+                    const sectionNames = {
+                      'greetings': '1. Приветствие',
+                      'issue_intro': '2. Введение / Ссылка',
+                      'main_problem': '3. Суть проблемы',
+                      'problem_consequence': '4. Последствия',
+                      'evidence': '5. Документы / срок',
+                      'resolution_request': '6. Запрос решения',
+                      'closing_formula': '7. Заключение',
+                      'sign_off': '8. Подпись'
+                    };
+                    
+                    return (
+                      <div key={categoryKey} className="fade-in">
+                        <div className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                          {sectionNames[categoryKey]}
+                          {completedSections.has(categoryKey) && (
+                            <Icon.Check className="ml-2 text-green-600" />
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {PHRASES_DATA[categoryKey].map(phrase => {
+                            const active = selections[categoryKey] === phrase.id;
+                            return (
+                              <div key={phrase.id} className={`p-3 rounded ${active ? 'bg-blue-50 border-2 border-blue-200' : 'bg-gray-50 border border-gray-100' } flex justify-between items-start`}>
+                                <div>
+                                  <div className="font-medium">{replacePlaceholder(phrase.text)}</div>
+                                  <div className="text-sm text-gray-500 mt-1 italic">{phrase.ru}</div>
+                                </div>
+                                <div className="ml-3 flex flex-col items-end">
+                                  <button className="btn-icon bg-white border p-1 mb-2" title="Выбрать" onClick={() => {
+                                    setSelections(prev => ({ ...prev, [categoryKey]: phrase.id }));
+                                  }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M20 6L9 17l-5-5"/></svg>
+                                  </button>
+                                  <button className={`btn-icon p-1 ${premiumMode ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`} title="Озвучить" onClick={() => speakText(replacePlaceholder(phrase.text))}>
+                                    {isLoading ? <Icon.Loader /> : <Icon.Volume />}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* CENTER + RIGHT columns */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Готовое письмо</h2>
-                <div className="text-sm text-gray-600">Дата: {currentDate}</div>
-              </div>
+          <div className={`space-y-6 ${view === 'schreiben' ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+            {view === 'schreiben' && (
+              <div className="card">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">Готовое письмо</h2>
+                  <div className="text-sm text-gray-600">Дата: {currentDate}</div>
+                </div>
 
-              <div className="bg-gray-50 p-4 rounded border border-gray-100 min-h-[220px] whitespace-pre-wrap text-gray-800">
-                <pre className="m-0">{assembleLetterText()}</pre>
-              </div>
+                <div className="bg-gray-50 p-4 rounded border border-gray-100 min-h-[220px] whitespace-pre-wrap text-gray-800">
+                  <pre className="m-0">{assembleLetterText()}</pre>
+                </div>
 
-              <div className="mt-4 flex gap-3">
-                <button className="px-4 py-2 bg-blue-700 text-white rounded flex items-center" onClick={() => speakText(assembleLetterText(), "Fenrir")}>
-                  {isLoading ? <Icon.Loader className="mr-2" /> : <Icon.Volume className="mr-2" />} Озвучить письмо
-                </button>
+                <div className="mt-4 flex gap-3 flex-wrap">
+                  <button className={`px-4 py-2 rounded flex items-center ${premiumMode ? 'bg-purple-600 text-white' : 'bg-blue-700 text-white'}`} onClick={() => speakText(assembleLetterText())}>
+                    {isLoading ? <Icon.Loader className="mr-2" /> : <Icon.Volume className="mr-2" />} 
+                    {premiumMode ? '🎵 Озвучить письмо (Premium)' : 'Озвучить письмо'}
+                  </button>
 
-                <button className="px-4 py-2 border rounded" onClick={() => {
-                  // copy to clipboard
-                  navigator.clipboard.writeText(assembleLetterText()).then(()=> {
-                    alert("Письмо скопировано в буфер обмена");
-                  });
-                }}>Копировать</button>
+                  <button className="px-4 py-2 border rounded" onClick={() => {
+                    navigator.clipboard.writeText(assembleLetterText()).then(()=> {
+                      alert("Письмо скопировано в буфер обмена");
+                    });
+                  }}>Копировать</button>
 
-                <a className="px-4 py-2 border rounded text-sm" href={"data:text/plain;charset=utf-8," + encodeURIComponent(assembleLetterText())} download="letter.txt">Скачать .txt</a>
+                  <a className="px-4 py-2 border rounded text-sm" href={"data:text/plain;charset=utf-8," + encodeURIComponent(assembleLetterText())} download="letter.txt">Скачать .txt</a>
 
-                {audioUrl && (
-                  <audio controls src={audioUrl} className="ml-auto" />
-                )}
-              </div>
-            </div>
-
-            {/* Sprechen module (diálogo) — shown when view === 'sprechen' */}
-            <div className="card">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold">{activeScenario.title_ru} — {activeScenario.title_de}</h3>
-                <div className="flex items-center gap-2">
-                  <select value={activeScenario.id} onChange={(e) => {
-                    const s = SPRECHEN_SCENARIOS.find(x => x.id === e.target.value);
-                    setActiveScenario(s);
-                    setActiveDialogue(s.dialogues[0]);
-                  }} className="p-2 border rounded">
-                    {SPRECHEN_SCENARIOS.map(s => <option key={s.id} value={s.id}>{s.title_ru}</option>)}
-                  </select>
+                  {audioUrl && (
+                    <div className="flex items-center gap-2">
+                      <audio 
+                        controls 
+                        src={audioUrl} 
+                        className="max-w-xs"
+                        onError={(e) => console.error("Audio element error:", e)}
+                        ref={audioRef}
+                      />
+                      <button 
+                        className="px-3 py-1 bg-green-600 text-white rounded text-sm"
+                        onClick={() => {
+                          const audio = new Audio(audioUrl);
+                          audio.play().catch(e => console.error("Play error:", e));
+                        }}
+                      >
+                        Воспроизвести
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              <div className="mb-3">
-                {activeScenario.dialogues.length > 1 && (
-                  <div className="flex gap-2 mb-3">
-                    {activeScenario.dialogues.map(d => (
-                      <button key={d.id} onClick={() => setActiveDialogue(d)} className={`px-3 py-1 rounded ${activeDialogue.id === d.id ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>{d.title_ru}</button>
+            {/* Sprechen module */}
+            {view === 'sprechen' && (
+              <div className="card">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold">{activeScenario.title_ru} — {activeScenario.title_de}</h3>
+                  <div className="flex items-center gap-2">
+                    <select value={activeScenario.id} onChange={(e) => {
+                      const s = SPRECHEN_SCENARIOS.find(x => x.id === e.target.value);
+                      setActiveScenario(s);
+                      setActiveDialogue(s.dialogues[0]);
+                    }} className="p-2 border rounded">
+                      {SPRECHEN_SCENARIOS.map(s => <option key={s.id} value={s.id}>{s.title_ru}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  {activeScenario.dialogues.length > 1 && (
+                    <div className="flex gap-2 mb-3">
+                      {activeScenario.dialogues.map(d => (
+                        <button key={d.id} onClick={() => setActiveDialogue(d)} className={`px-3 py-1 rounded ${activeDialogue.id === d.id ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>{d.title_ru}</button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="text-sm text-gray-700 mb-2">{activeDialogue.title_ru}</div>
+
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                    {parsedDialogue.map(line => (
+                      <div key={line.id} className={`p-3 rounded ${line.speaker === 'A:' ? 'bg-blue-50 border-blue-100' : 'bg-gray-50 border-gray-100' } flex justify-between items-start`}>
+                        <div>
+                          <div className="font-semibold"><span className="mr-2">{line.speaker}</span>{line.de_text}</div>
+                          <div className="text-sm italic text-gray-600 mt-1">{line.ru_text}</div>
+                        </div>
+                        <div className="ml-3">
+                          <button className={`btn-icon p-1 ${premiumMode ? 'bg-purple-600 text-white' : 'bg-indigo-600 text-white'}`} title="Озвучить реплику" onClick={() => speakText(line.de_text)}>
+                            {isLoading ? <Icon.Loader /> : <Icon.Volume />}
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                )}
-                <div className="text-sm text-gray-700 mb-2">{activeDialogue.title_ru}</div>
 
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                  {parsedDialogue.map(line => (
-                    <div key={line.id} className={`p-3 rounded ${line.speaker === 'A:' ? 'bg-blue-50 border-blue-100' : 'bg-gray-50 border-gray-100' } flex justify-between items-start`}>
-                      <div>
-                        <div className="font-semibold"><span className="mr-2">{line.speaker}</span>{line.de_text}</div>
-                        <div className="text-sm italic text-gray-600 mt-1">{line.ru_text}</div>
-                      </div>
-                      <div className="ml-3">
-                        <button className="btn-icon bg-indigo-600 text-white p-1" title="Озвучить реплику" onClick={() => speakText(line.de_text, line.voice)}>
-                          {isLoading ? <Icon.Loader /> : <Icon.Volume />}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 text-sm text-gray-600">
-                  Совет: читай реплики вслух, повторяя интонацию и ключевые слова — это тренирует произношение и поток речи.
+                  <div className="mt-4 text-sm text-gray-600">
+                    💡 Совет: читай реплики вслух, повторяя интонацию и ключевые слова — это тренирует произношение и поток речи.
+                    {premiumMode && <span className="text-purple-600 font-semibold"> 🎵 Сейчас используется качественная озвучка!</span>}
+                  </div>
                 </div>
               </div>
-            </div>
-
+            )}
           </div>
         </main>
 
@@ -547,11 +950,11 @@ A: Разработка, маркетинг, поддержка и HR.`
         )}
 
         <footer className="text-center text-xs text-gray-500 mt-8">
-          Сделано с ❤️ — автономная версия. TTS: Gemini (при наличии ключа) с fallback на Web Speech API.
+          Сделано с ❤️ — {premiumMode ? "🎵 Premium TTS: ElevenLabs" : "🔇 Basic TTS: Web Speech API"}
         </footer>
       </div>
     );
-  } // end App
+  }
 
   // Render
   const rootEl = document.getElementById('root');
