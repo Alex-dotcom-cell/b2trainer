@@ -149,7 +149,7 @@ A: Разработка, маркетинг, поддержка и HR.`
   }
 
   // Функция: попытаться получить TTS через Gemini API
-  async function callGeminiTTS(text, voice = "Kore", apiKey = API_CONFIG.API_KEY) {  // ИЗМЕНЕНО: "Kore" вместо "Fenrir"
+  async function callGeminiTTS(text, voice = "Fenrir", apiKey = API_CONFIG.API_KEY) {
     if (!apiKey) throw new Error("API key missing");
     const payload = {
       contents: [{ parts: [{ text }] }],
@@ -296,7 +296,7 @@ A: Разработка, маркетинг, поддержка и HR.`
     }
 
     // --- TTS orchestration: try Gemini, if fails -> Web Speech fallback ---
-    const speakText = async (text, voice = "Kore") => {  // ИЗМЕНЕНО: "Kore" вместо "Fenrir"
+    const speakText = async (text, voice = "Fenrir") => {
       setError(null);
       if (!text || text.trim().length === 0) return;
       setIsLoading(true);
@@ -337,7 +337,7 @@ A: Разработка, маркетинг, поддержка и HR.`
         const speaker = speakerMatch ? speakerMatch[0] : "A:";
         const de_text = de.replace(/^(A:|B:)\s*/, '');
         const ru_text = ruLines[i] ? ruLines[i].replace(/^(A:|B:)\s*/, '') : '';
-        return { id: i, speaker, de_text, ru_text, voice: "Kore" };  // ИЗМЕНЕНО: все голоса "Kore"
+        return { id: i, speaker, de_text, ru_text, voice: speaker === "A:" ? "Kore" : "Puck" };
       });
     };
 
@@ -444,7 +444,7 @@ A: Разработка, маркетинг, поддержка и HR.`
                               }}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M20 6L9 17l-5-5"/></svg>
                               </button>
-                              <button className="btn-icon bg-blue-600 text-white p-1" title="Озвучить" onClick={() => speakText(replacePlaceholder(phrase.text), "Kore")}>  {/* ИЗМЕНЕНО: "Kore" */}
+                              <button className="btn-icon bg-blue-600 text-white p-1" title="Озвучить" onClick={() => speakText(replacePlaceholder(phrase.text), "Fenrir")}>
                                 {isLoading ? <Icon.Loader /> : <Icon.Volume />}
                               </button>
                             </div>
@@ -471,7 +471,7 @@ A: Разработка, маркетинг, поддержка и HR.`
               </div>
 
               <div className="mt-4 flex gap-3">
-                <button className="px-4 py-2 bg-blue-700 text-white rounded flex items-center" onClick={() => speakText(assembleLetterText(), "Kore")}>  {/* ИЗМЕНЕНО: "Kore" */}
+                <button className="px-4 py-2 bg-blue-700 text-white rounded flex items-center" onClick={() => speakText(assembleLetterText(), "Fenrir")}>
                   {isLoading ? <Icon.Loader className="mr-2" /> : <Icon.Volume className="mr-2" />} Озвучить письмо
                 </button>
 
@@ -523,7 +523,7 @@ A: Разработка, маркетинг, поддержка и HR.`
                         <div className="text-sm italic text-gray-600 mt-1">{line.ru_text}</div>
                       </div>
                       <div className="ml-3">
-                        <button className="btn-icon bg-indigo-600 text-white p-1" title="Озвучить реплику" onClick={() => speakText(line.de_text, "Kore")}>  {/* ИЗМЕНЕНО: "Kore" */}
+                        <button className="btn-icon bg-indigo-600 text-white p-1" title="Озвучить реплику" onClick={() => speakText(line.de_text, line.voice)}>
                           {isLoading ? <Icon.Loader /> : <Icon.Volume />}
                         </button>
                       </div>
