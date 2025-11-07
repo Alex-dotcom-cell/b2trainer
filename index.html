@@ -236,7 +236,7 @@ B: Was passiert, wenn man zum Vorstellungsgespräch eingeladen wird?
 A: Man muss sich gut vorbereiten: über die Firma lesen, Fragen üben und passende Kleidung wählen.
 B: Gibt es Unterschiede zur Arbeitssuche in anderen Ländern?
 A: Ja, in Deutschland ist Pünktlichkeit und Struktur sehr wichtig. Man sollte professionell auftreten.
-B: Danke für die Infos! Das hilft mir bei meiner eigenen Jobsuche.
+B: Danke für die Infos! Das hilfs mir bei meiner eigenen Jobsuche.
 A: Gern geschehen. Viel Erfolg!`,
           text_ru: `A: Я хочу рассказать о поиске работы в Германии.
 B: Хорошо. С чего начинается поиск работы там?
@@ -568,6 +568,30 @@ A: Я действительно могу их порекомендовать �
       return text ? text.replace(/\[объект жалобы\]/g, activeTopic.de).replace(/\[Дата\]/g, currentDate) : '';
     }, [activeTopic, currentDate]);
 
+    // Функция для сборки письма с переводами
+    const assembleLetterWithTranslations = useCallback(() => {
+      const parts = Object.keys(selections).map(key => {
+        const phrase = findPhraseById(selections[key]);
+        if (!phrase) return null;
+        
+        const germanText = replacePlaceholders(phrase.text);
+        const russianText = replacePlaceholders(phrase.ru);
+        
+        return {
+          german: germanText,
+          russian: russianText
+        };
+      }).filter(Boolean);
+      
+      // Добавляем имя отправителя
+      parts.push({
+        german: senderName,
+        russian: senderName
+      });
+      
+      return parts;
+    }, [selections, findPhraseById, replacePlaceholders, senderName]);
+
     const assembleLetter = useCallback(() => {
       const parts = Object.keys(selections).map(key => 
         replacePlaceholders(findPhraseById(selections[key])?.text)
@@ -843,9 +867,18 @@ A: Я действительно могу их порекомендовать �
                 </div>
 
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[300px]">
-                  <pre className="whitespace-pre-wrap text-gray-800 font-sans text-base leading-relaxed">
-                    {assembleLetter()}
-                  </pre>
+                  <div className="space-y-4">
+                    {assembleLetterWithTranslations().map((part, index) => (
+                      <div key={index} className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                        <div className="text-gray-800 font-sans text-base leading-relaxed mb-2">
+                          {part.german}
+                        </div>
+                        <div className="text-gray-600 italic text-sm pl-4 border-l-2 border-gray-300">
+                          {part.russian}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex gap-3 mt-4 flex-wrap">
