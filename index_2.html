@@ -5,35 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>B2 German Exam Trainer</title>
 
-  <html>
-<head>
-    <title>Моя страница</title>
-</head>
-<body>
-
-    <!-- Например, сразу после заголовка -->
-    <h1>Добро пожаловать!</h1>
-
-    <!-- Вставляем наш код кнопок здесь -->
-    <div style="text-align: center; margin-top: 40px;">
-        <a href="index.html" style="text-decoration: none;">
-            <button style="padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                Главная страница
-            </button>
-        </a>
-        <a href="index_2.html" style="text-decoration: none; margin-left: 10px;">
-            <button style="padding: 10px 20px; font-size: 16px; background-color: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                Вторая страница
-            </button>
-        </a>
-    </div>
-
-    <!-- А дальше идёт остальное содержимое страницы -->
-    <p>Здесь ваш основной контент...</p>
-
-</body>
-</html>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -118,46 +89,111 @@
   <script type="text/babel">
   const { useState, useEffect, useMemo, useCallback } = React;
 
-  // ========== ДАННЫЕ ==========
+  // ========== ИСПРАВЛЕННЫЕ ДАННЫЕ ==========
   const SCHREIBEN_TOPICS = [
-    { id: 'produkt', ru: '1. Товар (дефект)', de: 'der neue Staubsauger' },
-    { id: 'service', ru: '2. Услуга (обслуживание)', de: 'Ihr Internetanschluss' },
-    { id: 'kurs', ru: '3. Курс/Школа (недостатки)', de: 'der Deutsch B2-Kurs' },
-    { id: 'reise', ru: '4. Путешествие/Отель (недостатки)', de: 'das gebuchte Hotelzimmer' },
-    { id: 'wohnung', ru: '5. Дефект в квартире', de: 'die Heizungsanlage in meiner Wohnung' },
-    { id: 'rechnung', ru: '6. Счет/Договор (ошибка)', de: 'meine letzte Rechnung' },
-    { id: 'transport', ru: '7. Транспорт (задержка/проблема)', de: 'die Bahnverbindung nach Berlin' },
+    { id: 'produkt', ru: '1. Товар (дефект)', de: 'des defekten Staubsaugers' },
+    { id: 'service', ru: '2. Услуга (обслуживание)', de: 'Ihres Internetanschlusses' },
+    { id: 'kurs', ru: '3. Курс/Школа (недостатки)', de: 'des Deutsch B2-Kurses' },
+    { id: 'reise', ru: '4. Путешествие/Отель (недостатки)', de: 'des gebuchten Hotelzimmers' },
+    { id: 'wohnung', ru: '5. Дефект в квартире', de: 'der Heizungsanlage in meiner Wohnung' },
+    { id: 'rechnung', ru: '6. Счет/Договор (ошибка)', de: 'meiner letzten Rechnung' },
+    { id: 'transport', ru: '7. Транспорт (задержка/проблема)', de: 'der Bahnverbindung nach Berlin' },
   ];
 
   const PHRASES_DATA = {
     greetings: [
-      { id: 101, text: "Sehr geehrte Damen und Herren,", ru: "Уважаемые дамы и господа,", tip: "Формальное обращение" }
+      { 
+        id: 101, 
+        text: "Sehr geehrte Damen und Herren,", 
+        ru: "Уважаемые дамы и господа,", 
+        tip: "Формальное обращение" 
+      }
     ],
     issue_intro: [
-      { id: 201, text: "Ich schreibe Ihnen bezüglich [объект жалобы].", ru: "Я пишу Вам по поводу [объект жалобы].", tip: "bezüglich + Genitiv" },
-      { id: 202, text: "Ich beziehe mich auf unsere Bestellung/Vereinbarung vom [Дата].", ru: "Я ссылаюсь на наш заказ/договоренность от [Дата].", tip: "sich beziehen auf + Akk" }
+      { 
+        id: 201, 
+        text: "ich schreibe Ihnen bezüglich [объект жалобы].", 
+        ru: "я пишу Вам по поводу [объект жалобы].", 
+        tip: "bezüglich + Genitiv" 
+      },
+      { 
+        id: 202, 
+        text: "Ich beziehe mich auf unsere Bestellung vom [Дата].", 
+        ru: "Я ссылаюсь на наш заказ от [Дата].", 
+        tip: "sich beziehen auf + Akk" 
+      }
     ],
     main_problem: [
-      { id: 301, text: "Leider muss ich Ihnen mitteilen, dass [объект жалобы] nicht der Beschreibung entspricht.", ru: "К сожалению, [объект жалобы] не соответствует описанию.", tip: "Придаточное с dass" },
-      { id: 302, text: "Der Hauptgrund für meine Beschwerde ist, dass es Mängel gibt.", ru: "Причина жалобы — наличие недостатков.", tip: "Mängel — недостатки" }
+      { 
+        id: 301, 
+        text: "Leider muss ich Ihnen mitteilen, dass der Artikel nicht der Beschreibung entspricht.", 
+        ru: "К сожалению, я должен сообщить Вам, что товар не соответствует описанию.", 
+        tip: "Придаточное предложение с dass" 
+      },
+      { 
+        id: 302, 
+        text: "Der Hauptgrund für meine Beschwerde sind erhebliche Mängel.", 
+        ru: "Основная причина моей жалобы — существенные недостатки.", 
+        tip: "Mängel — недостатки" 
+      }
     ],
     problem_consequence: [
-      { id: 401, text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", ru: "Из-за этой проблемы я не смог выполнить работу как планировал.", tip: "Aufgrund + Genitiv" },
-      { id: 402, text: "Das hat bei mir zu großem Ärger und Unannehmlichkeiten geführt.", ru: "Это привело к большим неудобствам.", tip: "zu Ärger führen" }
+      { 
+        id: 401, 
+        text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", 
+        ru: "Из-за этой проблемы я не смог выполнить свою работу, как планировал.", 
+        tip: "Aufgrund + Genitiv" 
+      },
+      { 
+        id: 402, 
+        text: "Dies hat bei mir zu erheblichen Unannehmlichkeiten geführt.", 
+        ru: "Это привело к значительным неудобствам.", 
+        tip: "zu Unannehmlichkeiten führen" 
+      }
     ],
     evidence: [
-      { id: 501, text: "Ich habe Ihnen alle notwendigen Unterlagen in der Anlage beigefügt.", ru: "Я приложил все необходимые документы.", tip: "beifügen — прилагать" },
-      { id: 502, text: "Ich möchte Sie bitten, die Angelegenheit innerhalb von 14 Tagen zu klären.", ru: "Прошу решить вопрос в течение 14 дней.", tip: "Infinitivkonstruktion" }
+      { 
+        id: 501, 
+        text: "Ich habe Ihnen alle notwendigen Unterlagen beigefügt.", 
+        ru: "Я приложил(а) все необходимые документы.", 
+        tip: "beifügen — прилагать" 
+      },
+      { 
+        id: 502, 
+        text: "Ich bitte Sie, die Angelegenheit innerhalb von 14 Tagen zu klären.", 
+        ru: "Я прошу Вас решить этот вопрос в течение 14 дней.", 
+        tip: "Infinitivkonstruktion" 
+      }
     ],
     resolution_request: [
-      { id: 601, text: "Daher bitte ich Sie höflich um eine schnelle Lösung und um Ersatz.", ru: "Прошу срочного решения и замены.", tip: "Daher — поэтому" },
-      { id: 602, text: "Falls dies nicht möglich ist, erwarte ich die volle Rückerstattung des Kaufpreises.", ru: "Если невозможно — ожидаю возврата средств.", tip: "Falls = если" }
+      { 
+        id: 601, 
+        text: "Daher bitte ich Sie höflichst um eine umgehende Lösung.", 
+        ru: "Поэтому я вежливо прошу Вас о немедленном решении.", 
+        tip: "Daher — поэтому" 
+      },
+      { 
+        id: 602, 
+        text: "Falls eine Reparatur nicht möglich ist, erwarte ich eine vollständige Rückerstattung.", 
+        ru: "Если ремонт невозможен, я ожидаю полного возврата средств.", 
+        tip: "Falls = если" 
+      }
     ],
     closing_formula: [
-      { id: 701, text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine schnelle Klärung.", ru: "Благодарю за внимание и надеюсь на быстрое решение.", tip: "Стандартная формула" }
+      { 
+        id: 701, 
+        text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine baldige Klärung.", 
+        ru: "Благодарю Вас за Ваши усилия и надеюсь на скорое решение.", 
+        tip: "Стандартная формула" 
+      }
     ],
     sign_off: [
-      { id: 801, text: "Mit freundlichen Grüßen,", ru: "С уважением,", tip: "Подпись" }
+      { 
+        id: 801, 
+        text: "Mit freundlichen Grüßen", 
+        ru: "С уважением", 
+        tip: "Подпись" 
+      }
     ],
   };
 
@@ -172,7 +208,7 @@
           title_ru: 'A. Международная IT-компания',
           text_de: `A: Ich möchte über einen Arbeitgeber sprechen, bei dem ich gerne arbeiten würde – ein internationales IT-Unternehmen.
 B: Klingt spannend. In welcher Branche ist das Unternehmen tätig?
-A: Es entwickelt Softwarelösungen für große Firmen, zum Beispiel für Banken und Versicherungen.
+A: Es entwickelt Softwarelösungen für große Unternehmen, zum Beispiel für Banken und Versicherungen.
 B: Und welche Abteilungen gibt es dort?
 A: Es gibt eine Entwicklungsabteilung, ein Marketingteam, den Kundenservice und die Personalabteilung.
 B: Was findest du besonders interessant an diesem Arbeitgeber?
@@ -181,16 +217,16 @@ B: Und wie ist das Arbeitsklima dort?
 A: Laut Bewertungen ist es sehr angenehm – flexible Arbeitszeiten, gute Bezahlung und Weiterbildungsmöglichkeiten.
 B: Das klingt nach einem idealen Arbeitsplatz.
 A: Ja, ich hoffe, dort eines Tages arbeiten zu können.`,
-          text_ru: `A: Я хочу рассказать о работодателе, у которого я хотел бы работать — это международная IT-компания.
+          text_ru: `A: Я хочу рассказать о работодателе, у которого я хотел(а) бы работать — это международная IT-компания.
 B: Звучит интересно. В какой отрасли работает эта компания?
-A: Оно разрабатывает программное обеспечение для крупных компаний, например, банков и страховых фирм.
+A: Она разрабатывает программные решения для крупных компаний, например, для банков и страховых компаний.
 B: А какие отделы там есть?
 A: Есть отдел разработки, команда маркетинга, служба поддержки клиентов и отдел кадров.
 B: Что тебе особенно интересно в этом работодателе?
 A: Международная атмосфера и возможность работать за границей.
 B: А какая там рабочая атмосфера?
-A: Согласно отзывам, атмосфера очень приятная — гибкий график, хорошая зарплата и возможности повышения квалификации.
-B: Звучит как идеальное место работы.
+A: Согласно отзывам, атмосфера очень приятная — гибкий график, хорошая оплата и возможности повышения квалификации.
+B: Звучит как идеальное рабочее место.
 A: Да, я надеюсь когда-нибудь там работать.`
         }
       ]
@@ -205,9 +241,9 @@ A: Да, я надеюсь когда-нибудь там работать.`
           title_ru: 'A. Семейная компания',
           text_de: `A: Ich kenne ein Unternehmen, das ein sehr gutes Arbeitsumfeld bietet – es ist ein mittelständisches Familienunternehmen.
 B: Was macht das Arbeitsumfeld dort so gut?
-A: Die Atmosphäre ist freundlich und respektvoll. Die Mitarbeiter arbeiten gern zusammen.
+A: Die Atmosphäre ist freundlich und respektvoll. Die Mitarbeiter arbeiten gerne zusammen.
 B: Und wie sieht es mit dem Gehalt aus?
-A: Die Löhne sind fair und es gibt regelmäßige Gehaltserhöhungen.
+A: Die Gehälter sind fair und es gibt regelmäßige Gehaltserhöhungen.
 B: Gibt es auch Karrierechancen?
 A: Ja, man kann sich intern weiterentwickeln und bekommt Unterstützung bei Fortbildungen.
 B: Wie sind die Arbeitszeiten geregelt?
@@ -216,9 +252,9 @@ B: Und was ist mit den Arbeitsbedingungen?
 A: Die Büros sind modern ausgestattet, es gibt kostenlose Getränke und ergonomische Möbel.
 B: Das klingt wirklich attraktiv.
 A: Ja, ich denke, solche Unternehmen sind ein gutes Beispiel für andere.`,
-          text_ru: `A: Я знаю компанию, которая предлагает очень хорошие условия труда — это средняя семейная фирма.
+          text_ru: `A: Я знаю компанию, которая предлагает очень хорошие условия труда — это среднее семейное предприятие.
 B: Что делает условия труда там такими хорошими?
-A: Атмосфера дружелюбная и уважительная. Сотрудники охотно работают вместе.
+A: Атмосфера дружелюбная и уважительная. Сотрудники с удовольствием работают вместе.
 B: А как обстоят дела с зарплатой?
 A: Зарплаты справедливые, и регулярно происходят повышения.
 B: Есть ли возможности карьерного роста?
@@ -423,14 +459,13 @@ A: Я действительно могу их порекомендовать �
     }
   ];
 
-  // ========== УЛУЧШЕННАЯ СИСТЕМА TTS С GOOGLE ГОЛОСАМИ ==========
+  // ========== УЛУЧШЕННАЯ СИСТЕМА TTS С ЖЕНСКИМИ ГОЛОСАМИ ==========
   const useAdvancedTTS = (logger) => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [availableVoices, setAvailableVoices] = useState([]);
     const [selectedVoice, setSelectedVoice] = useState(null);
     const [isMobile, setIsMobile] = useState(false);
 
-    // Определяем мобильное устройство
     useEffect(() => {
       const checkMobile = () => {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -438,12 +473,10 @@ A: Я действительно могу их порекомендовать �
       setIsMobile(checkMobile());
     }, []);
 
-    // Загрузка голосов при инициализации
     useEffect(() => {
       loadVoices();
     }, []);
 
-    // Список Google-голосов для немецкого языка
     const getGoogleVoices = () => {
       return [
         {
@@ -469,6 +502,22 @@ A: Я действительно могу их порекомендовать �
           default: false,
           isGoogle: true,
           gender: 'male'
+        },
+        {
+          name: 'Microsoft Hedda',
+          lang: 'de-DE',
+          localService: true,
+          default: false,
+          isGoogle: false,
+          gender: 'female'
+        },
+        {
+          name: 'Microsoft Katja',
+          lang: 'de-DE',
+          localService: true,
+          default: false,
+          isGoogle: false,
+          gender: 'female'
         }
       ];
     };
@@ -480,7 +529,6 @@ A: Я действительно могу их порекомендовать �
           if (voices.length > 0) {
             processVoices(voices, resolve);
           } else {
-            // Ждем загрузки голосов
             window.speechSynthesis.onvoiceschanged = () => {
               const voices = window.speechSynthesis.getVoices();
               processVoices(voices, resolve);
@@ -488,7 +536,6 @@ A: Я действительно могу их порекомендовать �
           }
         };
 
-        // Для мобильных добавляем задержку
         if (isMobile) {
           setTimeout(loadSystemVoices, 1000);
         } else {
@@ -502,30 +549,29 @@ A: Я действительно могу их порекомендовать �
         voice.lang.includes('de') || voice.lang.includes('DE') || voice.lang.includes('ger')
       );
 
-      // Добавляем Google-голоса
       const googleVoices = getGoogleVoices();
       const allVoices = [...germanVoices, ...googleVoices];
 
-      // Сортируем голоса: сначала Google женские, потом остальные женские, потом Google, потом остальные
       const sortedVoices = allVoices.sort((a, b) => {
-        // Google женские голоса - самые приоритетные
         if (a.isGoogle && a.gender === 'female' && (!b.isGoogle || b.gender !== 'female')) return -1;
         if (b.isGoogle && b.gender === 'female' && (!a.isGoogle || a.gender !== 'female')) return 1;
 
-        // Женские голоса
         const aIsFemale = a.gender === 'female' ||
                          a.name.toLowerCase().includes('female') ||
                          a.name.toLowerCase().includes('woman') ||
-                         a.name.toLowerCase().includes('anna');
+                         a.name.toLowerCase().includes('anna') ||
+                         a.name.toLowerCase().includes('hedda') ||
+                         a.name.toLowerCase().includes('katja');
         const bIsFemale = b.gender === 'female' ||
                          b.name.toLowerCase().includes('female') ||
                          b.name.toLowerCase().includes('woman') ||
-                         b.name.toLowerCase().includes('anna');
+                         b.name.toLowerCase().includes('anna') ||
+                         b.name.toLowerCase().includes('hedda') ||
+                         b.name.toLowerCase().includes('katja');
 
         if (aIsFemale && !bIsFemale) return -1;
         if (!aIsFemale && bIsFemale) return 1;
 
-        // Google голоса
         if (a.isGoogle && !b.isGoogle) return -1;
         if (!a.isGoogle && b.isGoogle) return 1;
 
@@ -534,7 +580,6 @@ A: Я действительно могу их порекомендовать �
 
       setAvailableVoices(sortedVoices);
 
-      // Автовыбор лучшего голоса - предпочитаем Google женский
       const bestVoice = sortedVoices.find(v => v.isGoogle && v.gender === 'female') ||
                        sortedVoices.find(v => v.gender === 'female') ||
                        sortedVoices.find(v => v.isGoogle) ||
@@ -549,7 +594,6 @@ A: Я действительно могу их порекомендовать �
       resolve(sortedVoices);
     };
 
-    // Улучшенная функция озвучки
     const speak = useCallback(async (text) => {
       if (!text || isSpeaking) return;
 
@@ -559,15 +603,12 @@ A: Я действительно могу их порекомендовать �
           return;
         }
 
-        // Останавливаем предыдущую речь
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'de-DE';
 
-        // Настройки для разных типов голосов
         if (selectedVoice && selectedVoice.isGoogle) {
-          // Для Google голосов - оптимальные настройки
           utterance.rate = 0.95;
           utterance.pitch = 1.05;
           utterance.volume = 1.0;
@@ -581,7 +622,6 @@ A: Я действительно могу их порекомендовать �
           utterance.volume = 1.0;
         }
 
-        // Пытаемся использовать выбранный голос, если он реальный
         if (selectedVoice && !selectedVoice.isGoogle) {
           utterance.voice = selectedVoice;
         }
@@ -605,7 +645,6 @@ A: Я действительно могу их порекомендовать �
           logger.log(`🎵 Озвучка: "${text.substring(0, 20)}..."${voiceInfo}`, 'info');
         };
 
-        // Для мобильных добавляем небольшую задержку
         if (isMobile) {
           setTimeout(() => {
             setIsSpeaking(true);
@@ -653,7 +692,6 @@ A: Я действительно могу их порекомендовать �
       };
 
       setLogs(prev => [logEntry, ...prev].slice(0, 50));
-
       console.log(`[${timestamp}] ${message}`);
     }, []);
 
@@ -717,7 +755,7 @@ A: Я действительно могу их порекомендовать �
     )
   };
 
-  // Компонент выбора голоса с Google-голосами
+  // Компонент выбора голоса
   const VoiceSelector = ({ voices, selectedVoice, onSelectVoice, onReload, isSpeaking, isMobile }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -727,7 +765,9 @@ A: Я действительно могу их порекомендовать �
     };
 
     const getGenderIcon = (voice) => {
-      if (voice.gender === 'female' || voice.name.toLowerCase().includes('female') || voice.name.toLowerCase().includes('anna')) return '👩';
+      if (voice.gender === 'female' || voice.name.toLowerCase().includes('female') || 
+          voice.name.toLowerCase().includes('hedda') || voice.name.toLowerCase().includes('katja')) 
+        return '👩';
       if (voice.gender === 'male' || voice.name.toLowerCase().includes('male')) return '👨';
       return '🧑';
     };
@@ -950,12 +990,44 @@ A: Я действительно могу их порекомендовать �
 
     return (
       <div className="max-w-6xl mx-auto space-y-4 mobile-optimized">
-        {/* Шапка */}
+        {/* Шапка с кнопками навигации */}
         <header className="text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">B2 German Exam Trainer</h1>
           <p className="text-gray-600 mb-4 text-sm md:text-base">
             {tts.isMobile ? '📱 Мобильная версия' : '💻 Десктоп версия'} | 🔊 Google TTS
           </p>
+
+          {/* Кнопки навигации как в оригинальном коде */}
+          <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
+            <a href="index.html" style={{ textDecoration: 'none' }}>
+              <button style={{ 
+                padding: '10px 20px', 
+                fontSize: '16px', 
+                backgroundColor: '#4CAF50', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '5px', 
+                cursor: 'pointer',
+                margin: '5px'
+              }}>
+                Главная страница
+              </button>
+            </a>
+            <a href="index_2.html" style={{ textDecoration: 'none' }}>
+              <button style={{ 
+                padding: '10px 20px', 
+                fontSize: '16px', 
+                backgroundColor: '#2196F3', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '5px', 
+                cursor: 'pointer',
+                margin: '5px'
+              }}>
+                Вторая страница
+              </button>
+            </a>
+          </div>
 
           <div className="flex justify-center gap-1 md:gap-2 mb-4 flex-wrap">
             <button
