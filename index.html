@@ -4,35 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>B2 German Exam Trainer — Debug Version</title>
-
-  <html>
-<head>
-    <title>Моя страница</title>
-</head>
-<body>
-
-    <!-- Например, сразу после заголовка -->
-    <h1>Добро пожаловать!</h1>
-
-    <!-- Вставляем наш код кнопок здесь -->
-    <div style="text-align: center; margin-top: 40px;">
-        <a href="index.html" style="text-decoration: none;">
-            <button style="padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                Главная страница
-            </button>
-        </a>
-        <a href="index_2.html" style="text-decoration: none; margin-left: 10px;">
-            <button style="padding: 10px 20px; font-size: 16px; background-color: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                Вторая страница
-            </button>
-        </a>
-    </div>
-
-    <!-- А дальше идёт остальное содержимое страницы -->
-    <p>Здесь ваш основной контент...</p>
-
-</body>
-</html>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -76,26 +47,26 @@
     ],
     issue_intro: [
       { id: 201, text: "Ich schreibe Ihnen bezüglich [объект жалобы].", ru: "Я пишу Вам по поводу [объект жалобы].", tip: "bezüglich + Genitiv" },
-      { id: 202, text: "Ich beziehe mich auf unsere Bestellung/Vereinbarung vom [Дата].", ru: "Я ссылаюсь на наш заказ/договоренность от [Дата].", tip: "sich beziehen auf + Akk" }
+      { id: 202, text: "Ich beziehe mich auf unsere Bestellung/Vereinbarung vom [Дата].", ru: "Я ссылаюсь на наш заказ/соглашение от [Дата].", tip: "sich beziehen auf + Akk" }
     ],
     main_problem: [
-      { id: 301, text: "Leider muss ich Ihnen mitteilen, dass [объект жалобы] nicht der Beschreibung entspricht.", ru: "К сожалению, [объект жалобы] не соответствует описанию.", tip: "Придаточное с dass" },
-      { id: 302, text: "Der Hauptgrund für meine Beschwerde ist, dass es Mängel gibt.", ru: "Причина жалобы — наличие недостатков.", tip: "Mängel — недостатки" }
+      { id: 301, text: "Leider muss ich Ihnen mitteilen, dass [объект жалобы] nicht der Beschreibung entspricht.", ru: "К сожалению, должен сообщить Вам, что [объект жалобы] не соответствует описанию.", tip: "Придаточное с dass" },
+      { id: 302, text: "Der Hauptgrund für meine Beschwerde ist, dass es Mängel gibt.", ru: "Основная причина моей жалобы - наличие недостатков.", tip: "Mängel — недостатки" }
     ],
     problem_consequence: [
-      { id: 401, text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", ru: "Из-за этой проблемы я не смог выполнить работу как планировал.", tip: "Aufgrund + Genitiv" },
-      { id: 402, text: "Das hat bei mir zu großem Ärger und Unannehmlichkeiten geführt.", ru: "Это привело к большим неудобствам.", tip: "zu Ärger führen" }
+      { id: 401, text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", ru: "Из-за этой проблемы я не смог выполнить свою работу как планировалось.", tip: "Aufgrund + Genitiv" },
+      { id: 402, text: "Das hat bei mir zu großem Ärger und Unannehmlichkeiten geführt.", ru: "Это привело к большому раздражению и неудобствам с моей стороны.", tip: "zu Ärger führen" }
     ],
     evidence: [
-      { id: 501, text: "Ich habe Ihnen alle notwendigen Unterlagen in der Anlage beigefügt.", ru: "Я приложил все необходимые документы.", tip: "beifügen — прилагать" },
-      { id: 502, text: "Ich möchte Sie bitten, die Angelegenheit innerhalb von 14 Tagen zu klären.", ru: "Прошу решить вопрос в течение 14 дней.", tip: "Infinitivkonstruktion" }
+      { id: 501, text: "Ich habe Ihnen alle notwendigen Unterlagen in der Anlage beigefügt.", ru: "Я приложил(а) все необходимые документы в приложении.", tip: "beifügen — прилагать" },
+      { id: 502, text: "Ich möchte Sie bitten, die Angelegenheit innerhalb von 14 Tagen zu klären.", ru: "Я хотел(а) бы попросить Вас урегулировать этот вопрос в течение 14 дней.", tip: "Infinitivkonstruktion" }
     ],
     resolution_request: [
-      { id: 601, text: "Daher bitte ich Sie höflich um eine schnelle Lösung und um Ersatz.", ru: "Прошу срочного решения и замены.", tip: "Daher — поэтому" },
-      { id: 602, text: "Falls dies nicht möglich ist, erwarte ich die volle Rückerstattung des Kaufpreises.", ru: "Если невозможно — ожидаю возврата средств.", tip: "Falls = если" }
+      { id: 601, text: "Daher bitte ich Sie höflich um eine schnelle Lösung und um Ersatz.", ru: "Поэтому я вежливо прошу Вас о быстром решении и замене.", tip: "Daher — поэтому" },
+      { id: 602, text: "Falls dies nicht möglich ist, erwarte ich die volle Rückerstattung des Kaufpreises.", ru: "Если это невозможно, я ожидаю полного возврата стоимости покупки.", tip: "Falls = если" }
     ],
     closing_formula: [ 
-      { id: 701, text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine schnelle Klärung.", ru: "Благодарю за внимание и надеюсь на быстрое решение.", tip: "Стандартная формула" }
+      { id: 701, text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine schnelle Klärung.", ru: "Благодарю Вас за Ваши усилия и надеюсь на быстрое урегулирование.", tip: "Стандартная формула" }
     ],
     sign_off: [ 
       { id: 801, text: "Mit freundlichen Grüßen,", ru: "С уважением,", tip: "Подпись" }
@@ -124,7 +95,7 @@ B: Das klingt nach einem idealen Arbeitsplatz.
 A: Ja, ich hoffe, dort eines Tages arbeiten zu können.`,
           text_ru: `A: Я хочу рассказать о работодателе, у которого я хотел бы работать — это международная IT-компания.
 B: Звучит интересно. В какой отрасли работает эта компания?
-A: Оно разрабатывает программное обеспечение для крупных компаний, например, банков и страховых фирм.
+A: Она разрабатывает программное обеспечение для крупных компаний, например, банков и страховых фирм.
 B: А какие отделы там есть?
 A: Есть отдел разработки, команда маркетинга, служба поддержки клиентов и отдел кадров.
 B: Что тебе особенно интересно в этом работодателе?
@@ -156,7 +127,7 @@ A: Es gibt flexible Arbeitszeiten und die Möglichkeit, im Homeoffice zu arbeite
 B: Und was ist mit den Arbeitsbedingungen?
 A: Die Büros sind modern ausgestattet, es gibt kostenlose Getränke und ergonomische Möbel.
 B: Das klingt wirklich attraktiv.
-A: Ja, ich denke, solche Unternehmen sind ein gutes Beispiel für другие.`,
+A: Ja, ich denke, solche Unternehmen sind ein gutes Beispiel für andere.`,
           text_ru: `A: Я знаю компанию, которая предлагает очень хорошие условия труда — это средняя семейная фирма.
 B: Что делает условия труда там такими хорошими?
 A: Атмосфера дружелюбная и уважительная. Сотрудники охотно работают вместе.
@@ -266,7 +237,7 @@ B: Und wie läuft der Erstkontakt ab?
 A: Man schickt die Bewerbung per E-Mail oder über ein Online-Formular. Danach bekommt man eine Antwort.
 B: Was passiert, wenn man zum Vorstellungsgespräch eingeladen wird?
 A: Man muss sich gut vorbereiten: über die Firma lesen, Fragen üben und passende Kleidung wählen.
-B: Gibt es Unterschiede zur Arbeitssuche in anderen Ländern?
+B: Gibt es Unterschiede zur Arbeitssuche in других Ländern?
 A: Ja, in Deutschland ist Pünktlichkeit und Struktur sehr wichtig. Man sollte professionell auftreten.
 B: Danke für die Infos! Das hilft mir bei meiner eigenen Jobsuche.
 A: Gern geschehen. Viel Erfolg!`,
@@ -299,7 +270,7 @@ A: Пожалуйста. Удачи!`
           text_de: `A: Ich finde, ein erfolgreicher Bewerbungsprozess beginnt mit einer guten Vorbereitung.
 B: Da stimme ich dir zu. Man sollte sich zuerst über das Unternehmen informieren.
 A: Genau. Man sollte wissen, was die Firma macht, welche Werte sie hat und welche Anforderungen sie stellt.
-B: Und dann kommt der Lebenslauf. Der muss klar и übersichtlich sein.
+B: Und dann kommt der Lebenslauf. Der muss klar und übersichtlich sein.
 A: Ja, und man sollte relevante Erfahrungen und Fähigkeiten betonen.
 B: Was ist mit dem Anschreiben?
 A: Das ist sehr wichtig. Es sollte persönlich sein und zeigen, warum man sich gerade für diese Stelle interessiert.
@@ -562,7 +533,32 @@ A: Я действительно могу их порекомендовать �
         <path d="M1 20v-6h6"/>
         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
       </svg>
+    ),
+    Home: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
     )
+  };
+
+  // Компонент навигации
+  const NavigationButtons = () => {
+    return (
+      <div className="flex justify-center gap-4 mb-6">
+        <a href="index.html" className="no-underline">
+          <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
+            <Icon.Home />
+            Главная страница
+          </button>
+        </a>
+        <a href="index_2.html" className="no-underline">
+          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+            Вторая страница
+          </button>
+        </a>
+      </div>
+    );
   };
 
   // Компонент выбора голоса
@@ -699,8 +695,22 @@ A: Я действительно могу их порекомендовать �
     const allPhrases = useMemo(() => Object.values(PHRASES_DATA).flat(), []);
     const findPhraseById = useCallback((id) => allPhrases.find(p => p.id === id), [allPhrases]);
 
-    const replacePlaceholders = useCallback((text) => {
-      return text ? text.replace(/\[объект жалобы\]/g, activeTopic.de).replace(/\[Дата\]/g, currentDate) : '';
+    const replacePlaceholders = useCallback((text, isRussian = false) => {
+      if (!text) return '';
+      
+      let result = text;
+      
+      if (isRussian) {
+        // Для русского текста используем русское описание темы
+        result = result.replace(/\[объект жалобы\]/g, activeTopic.ru.split('—')[1]?.trim() || activeTopic.ru);
+      } else {
+        // Для немецкого текста используем немецкое описание темы
+        result = result.replace(/\[объект жалобы\]/g, activeTopic.de);
+      }
+      
+      result = result.replace(/\[Дата\]/g, currentDate);
+      
+      return result;
     }, [activeTopic, currentDate]);
 
     const assembleLetterWithTranslations = useCallback(() => {
@@ -708,8 +718,8 @@ A: Я действительно могу их порекомендовать �
         const phrase = findPhraseById(selections[key]);
         if (!phrase) return null;
         
-        const germanText = replacePlaceholders(phrase.text);
-        const russianText = replacePlaceholders(phrase.ru);
+        const germanText = replacePlaceholders(phrase.text, false);
+        const russianText = replacePlaceholders(phrase.ru, true);
         
         return {
           german: germanText,
@@ -717,6 +727,7 @@ A: Я действительно могу их порекомендовать �
         };
       }).filter(Boolean);
       
+      // Добавляем имя отправителя
       parts.push({
         german: senderName,
         russian: senderName
@@ -727,7 +738,7 @@ A: Я действительно могу их порекомендовать �
 
     const assembleLetter = useCallback(() => {
       const parts = Object.keys(selections).map(key => 
-        replacePlaceholders(findPhraseById(selections[key])?.text)
+        replacePlaceholders(findPhraseById(selections[key])?.text, false)
       ).filter(Boolean);
       return [...parts, senderName].join('\n\n');
     }, [selections, findPhraseById, replacePlaceholders, senderName]);
@@ -787,6 +798,9 @@ A: Я действительно могу их порекомендовать �
         <header className="text-center">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">B2 German Exam Trainer</h1>
           <p className="text-gray-600 mb-4">Оффлайн версия с улучшенной озвучкой</p>
+          
+          {/* Кнопки навигации */}
+          <NavigationButtons />
           
           <div className="flex justify-center gap-2 mb-4 flex-wrap">
             <button 
@@ -956,10 +970,10 @@ A: Я действительно могу их порекомендовать �
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <div className="font-medium text-gray-900">
-                                    {replacePlaceholders(phrase.text)}
+                                    {replacePlaceholders(phrase.text, false)}
                                   </div>
                                   <div className="text-sm text-gray-600 mt-1 italic">
-                                    {phrase.ru}
+                                    {replacePlaceholders(phrase.ru, true)}
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-2 ml-3">
@@ -977,7 +991,7 @@ A: Я действительно могу их порекомендовать �
                                     <Icon.Check />
                                   </button>
                                   <button
-                                    onClick={() => handleSpeak(replacePlaceholders(phrase.text))}
+                                    onClick={() => handleSpeak(replacePlaceholders(phrase.text, false))}
                                     disabled={tts.isSpeaking}
                                     className="btn-icon bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
                                     title="Озвучить"
@@ -1103,32 +1117,32 @@ A: Я действительно могу их порекомендовать �
                                 <div className="text-gray-600 italic mt-2 text-sm">
                                   {line.ru_text}
                                 </div>
-                              </div>    
-                            </div>    
-                          </div>    
-                          <button            
+                              </div>
+                            </div>
+                          </div>
+                          <button
                             onClick={() => {
                               logger.log(`🎤 Озвучиваю реплику: ${line.de_text.substring(0, 30)}...`, 'info');
                               handleSpeak(line.de_text);
-                            }}            
+                            }}
                             disabled={tts.isSpeaking}
                             className="btn-icon bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors ml-4"
                             title="Озвучить реплику"
                           >
                             {tts.isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
-                          </button>            
-                        </div>            
-                      </div>            
-                    ))}            
-                  </div>            
-                </div>            
-              </div>            
-            )}            
-          </div>            
-        </main>            
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
 
         {/* Панель отладки */}
-        <DebugPanel             
+        <DebugPanel 
           logs={logger.logs} 
           onClear={logger.clearLogs}
           isVisible={logger.showDebug}
@@ -1136,12 +1150,12 @@ A: Я действительно могу их порекомендовать �
 
         <footer className="text-center text-gray-500 text-sm mt-8 pt-4 border-t border-gray-200">
           <p>B2 German Exam Trainer — Оффлайн версия | 🔊 Улучшенная система озвучки</p>
-        </footer>            
-      </div>            
-    );            
+        </footer>
+      </div>
+    );
   }
 
   ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>            
-</body>            
-</html>            
+  </script>
+</body>
+</html>
