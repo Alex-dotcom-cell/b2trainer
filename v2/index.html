@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>B2 German Exam Trainer</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px -1px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 1rem;
+    }
+    @media (min-width: 768px) {
+      .card {
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      }
+    }
+    .btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .debug-panel {
+      background: #1a1a1a;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 1rem;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .log-error { color: #ff6b6b; }
+    .log-warning { color: #ffd93d; }
+    .log-info { color: #6bcbef; }
+    .log-success { color: #6bcf7f; }
+    .voice-option {
+      cursor: pointer;
+      padding: 8px 12px;
+      margin: 4px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    .voice-option:hover { background: #f7fafc; }
+    .voice-option.selected { background: #ebf8ff; border-color: #4299e1; }
+
+    /* Мобильные стили */
+    .mobile-optimized {
+      font-size: 14px;
+    }
+    .mobile-button {
+      padding: 12px 16px;
+      font-size: 14px;
+      margin: 4px 2px;
+    }
+    @media (max-width: 768px) {
+      .mobile-column {
+        display: flex;
+        flex-direction: column;
+      }
+      .mobile-small-text {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body class="p-2 md:p-4">
+  <div id="root"></div>
+
+  <script type="text/babel">
+  const { useState, useEffect, useMemo, useCallback } = React;
+
+  // ========== ДАННЫЕ ==========
+  const SCHREIBEN_TOPICS = [
+    { id: 'produkt', ru: '1. Товар (дефект)', de: 'der neue Staubsauger' },
+    { id: 'service', ru: '2. Услуга (обслуживание)', de: 'Ihr Internetanschluss' },
+    { id: 'kurs', ru: '3. Курс/Школа (недостатки)', de: 'der Deutsch B2-Kurs' },
+    { id: 'reise', ru: '4. Путешествие/Отель (недостатки)', de: 'das gebuchte Hotelzimmer' },
+    { id: 'wohnung', ru: '5. Дефект в квартире', de: 'die Heizungsanlage in meiner Wohnung' },
+    { id: 'rechnung', ru: '6. Счет/Договор (ошибка)', de: 'meine letzte Rechnung' },
+    { id: 'transport', ru: '7. Транспорт (задержка/проблема)', de: 'die Bahnverbindung nach Berlin' },
+  ];
+
+  const PHRASES_DATA = {
+    greetings: [
+      { id: 101, text: "Sehr geehrte Damen und Herren,", ru: "Уважаемые дамы и господа,", tip: "Формальное обращение" }
+    ],
+    issue_intro: [
+      { id: 201, text: "Ich schreibe Ihnen bezüglich [объект жалобы].", ru: "Я пишу Вам по поводу [объект жалобы].", tip: "bezüglich + Genitiv" },
+      { id: 202, text: "Ich beziehe mich auf unsere Bestellung/Vereinbarung vom [Дата].", ru: "Я ссылаюсь на наш заказ/договоренность от [Дата].", tip: "sich beziehen auf + Akk" }
+    ],
+    main_problem: [
+      { id: 301, text: "Leider muss ich Ihnen mitteilen, dass [объект жалобы] nicht der Beschreibung entspricht.", ru: "К сожалению, [объект жалобы] не соответствует описанию.", tip: "Придаточное с dass" },
+      { id: 302, text: "Der Hauptgrund für meine Beschwerde ist, dass es Mängel gibt.", ru: "Причина жалобы — наличие недостатков.", tip: "Mängel — недостатки" }
+    ],
+    problem_consequence: [
+      { id: 401, text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", ru: "Из-за этой проблемы я не смог выполнить работу как планировал.", tip: "Aufgrund + Genitiv" },
+      { id: 402, text: "Das hat bei mir zu großem Ärger und Unannehmlichkeiten geführt.", ru: "Это привело к большим неудобствам.", tip: "zu Ärger führen" }
+    ],
+    evidence: [
+      { id: 501, text: "Ich habe Ihnen alle notwendigen Unterlagen in der Anlage beigefügt.", ru: "Я приложил все необходимые документы.", tip: "beifügen — прилагать" },
+      { id: 502, text: "Ich möchte Sie bitten, die Angelegenheit innerhalb von 14 Tagen zu klären.", ru: "Прошу решить вопрос в течение 14 дней.", tip: "Infinitivkonstruktion" }
+    ],
+    resolution_request: [
+      { id: 601, text: "Daher bitte ich Sie höflich um eine schnelle Lösung und um Ersatz.", ru: "Прошу срочного решения и замены.", tip: "Daher — поэтому" },
+      { id: 602, text: "Falls dies nicht möglich ist, erwarte ich die volle Rückerstattung des Kaufpreises.", ru: "Если невозможно — ожидаю возврата средств.", tip: "Falls = если" }
+    ],
+    closing_formula: [
+      { id: 701, text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine schnelle Klärung.", ru: "Благодарю за внимание и надеюсь на быстрое решение.", tip: "Стандартная формула" }
+    ],
+    sign_off: [
+      { id: 801, text: "Mit freundlichen Grüßen,", ru: "С уважением,", tip: "Подпись" }
+    ],
+  };
+
+  const SPRECHEN_SCENARIOS = [
+    {
+      id: 'thema1',
+      title_ru: 'Тема 1: Описание работодателя',
+      title_de: 'Thema 1: Arbeitgeber beschreiben',
+      dialogues: [
+        {
+          id: '1a',
+          title_ru: 'A. Международная IT-компания',
+          text_de: `A: Ich möchte über einen Arbeitgeber sprechen, bei dem ich gerne arbeiten würde – ein internationales IT-Unternehmen.
+B: Klingt spannend. In welcher Branche ist das Unternehmen tätig?
+A: Es entwickelt Softwarelösungen für große Firmen, zum Beispiel für Banken und Versicherungen.
+B: Und welche Abteilungen gibt es dort?
+A: Es gibt eine Entwicklungsabteilung, ein Marketingteam, den Kundenservice und die Personalabteilung.
+B: Was findest du besonders interessant an diesem Arbeitgeber?
+A: Die internationale Atmosphäre und die Möglichkeit, im Ausland zu arbeiten.
+B: Und wie ist das Arbeitsklima dort?
+A: Laut Bewertungen ist es sehr angenehm – flexible Arbeitszeiten, gute Bezahlung und Weiterbildungsmöglichkeiten.
+B: Das klingt nach einem idealen Arbeitsplatz.
+A: Ja, ich hoffe, dort eines Tages arbeiten zu können.`,
+          text_ru: `A: Я хочу рассказать о работодателе, у которого я хотел бы работать — это международная IT-компания.
+B: Звучит интересно. В какой отрасли работает эта компания?
+A: Оно разрабатывает программное обеспечение для крупных компаний, например, банков и страховых фирм.
+B: А какие отделы там есть?
+A: Есть отдел разработки, команда маркетинга, служба поддержки клиентов и отдел кадров.
+B: Что тебе особенно интересно в этом работодателе?
+A: Международная атмосфера и возможность работать за границей.
+B: А какая там рабочая атмосфера?
+A: Согласно отзывам, атмосфера очень приятная — гибкий график, хорошая зарплата и возможности повышения квалификации.
+B: Звучит как идеальное место работы.
+A: Да, я надеюсь когда-нибудь там работать.`
+        }
+      ]
+    },
+    {
+      id: 'thema2',
+      title_ru: 'Тема 2: Компания с хорошими условиями труда',
+      title_de: 'Thema 2: Unternehmen mit gutem Arbeitsumfeld',
+      dialogues: [
+        {
+          id: '2a',
+          title_ru: 'A. Семейная компания',
+          text_de: `A: Ich kenne ein Unternehmen, das ein sehr gutes Arbeitsumfeld bietet – es ist ein mittelständisches Familienunternehmen.
+B: Was macht das Arbeitsumfeld dort so gut?
+A: Die Atmosphäre ist freundlich und respektvoll. Die Mitarbeiter arbeiten gern zusammen.
+B: Und wie sieht es mit dem Gehalt aus?
+A: Die Löhne sind fair und es gibt regelmäßige Gehaltserhöhungen.
+B: Gibt es auch Karrierechancen?
+A: Ja, man kann sich intern weiterentwickeln und bekommt Unterstützung bei Fortbildungen.
+B: Wie sind die Arbeitszeiten geregelt?
+A: Es gibt flexible Arbeitszeiten und die Möglichkeit, im Homeoffice zu arbeiten.
+B: Und was ist mit den Arbeitsbedingungen?
+A: Die Büros sind modern ausgestattet, es gibt kostenlose Getränke und ergonomische Möbel.
+B: Das klingt wirklich attraktiv.
+A: Ja, ich denke, solche Unternehmen sind ein gutes Beispiel für andere.`,
+          text_ru: `A: Я знаю компанию, которая предлагает очень хорошие условия труда — это средняя семейная фирма.
+B: Что делает условия труда там такими хорошими?
+A: Атмосфера дружелюбная и уважительная. Сотрудники охотно работают вместе.
+B: А как обстоят дела с зарплатой?
+A: Зарплаты справедливые, и регулярно происходят повышения.
+B: Есть ли возможности карьерного роста?
+A: Да, можно развиваться внутри компании и получать поддержку в обучении.
+B: Как регулируется рабочее время?
+A: Есть гибкий график и возможность работать из дома.
+B: А как насчет условий труда?
+A: Офисы современно оборудованы, есть бесплатные напитки и эргономичная мебель.
+B: Это действительно звучит привлекательно.
+A: Да, я думаю, такие компании — хороший пример для других.`
+        }
+      ]
+    },
+    {
+      id: 'thema3',
+      title_ru: 'Тема 3: События и опыт, повлиявшие на выбор профессии',
+      title_de: 'Thema 3: Ereignisse und Erfahrungen, die Ihre Berufswahl beeinflusst haben',
+      dialogues: [
+        {
+          id: '3a',
+          title_ru: 'A. Интерес к технике с детства',
+          text_de: `A: Ich habe mich für meinen Beruf entschieden, weil ich schon als Kind großes Interesse an Technik hatte.
+B: Das ist spannend. Gab es ein besonderes Erlebnis, das dich beeinflusst hat?
+A: Ja, ich habe in der Schule ein Projekt gemacht, bei dem wir einen kleinen Roboter gebaut haben.
+B: Klingt cool! Hat dir das Projekt Spaß gemacht?
+A: Sehr! Ich habe gemerkt, dass ich kreativ bin und gerne Probleme löse.
+B: Hast du auch ein Praktikum gemacht?
+A: Ja, ich war zwei Wochen in einem IT-Unternehmen. Ich durfte bei echten Projekten mitarbeiten.
+B: Und wie war die Atmosphäre dort?
+A: Sehr angenehm. Die Kollegen waren hilfsbereit und ich habe viel gelernt.
+B: Hat dich jemand aus deiner Familie beeinflusst?
+A: Mein Onkel ist Ingenieur. Er hat mir oft von seiner Arbeit erzählt und mich motiviert.
+B: Dann hast du deinen Beruf mit Herz gewählt.
+A: Genau. Ich möchte etwas Sinnvolles machen und mich weiterentwickeln.`,
+          text_ru: `A: Я выбрал свою профессию, потому что с детства интересовался техникой.
+B: Это интересно. Было ли какое-то особенное событие, которое на тебя повлияло?
+A: Да, в школе я участвовал в проекте, где мы собирали маленького робота.
+B: Звучит круто! Тебе понравился этот проект?
+A: Очень! Я понял, что я креативный и люблю решать задачи.
+B: Ты проходил практику?
+A: Да, я был две недели в IT-компании. Мне разрешили участвовать в реальных проектах.
+B: А какая там была атмосфера?
+A: Очень приятная. Коллеги были отзывчивыми, и я многому научился.
+B: Кто-то из семьи повлиял на твой выбор?
+A: Мой дядя — инженер. Он часто рассказывал мне о своей работе и мотивировал меня.
+B: Значит, ты выбрал профессию с душой.
+A: Именно. Я хочу делать что-то полезное и развиваться.`
+        }
+      ]
+    },
+    {
+      id: 'thema4',
+      title_ru: 'Тема 4: Человек, повлиявший на выбор профессии',
+      title_de: 'Thema 4: Eine Person, die Ihre Berufswahl beeinflusst hat',
+      dialogues: [
+        {
+          id: '4a',
+          title_ru: 'A. Влияние старшего брата',
+          text_de: `A: Ich möchte über meinen älteren Bruder sprechen. Er hat meine Berufswahl stark beeinflusst.
+B: Interessant! Was macht dein Bruder beruflich?
+A: Er ist Grafikdesigner in einer Werbeagentur. Schon als Kind hat er viel gezeichnet und war sehr kreativ.
+B: Und wie hat er dich beeinflusst?
+A: Er hat mir gezeigt, wie spannend kreative Berufe sein können. Ich habe durch ihn angefangen, mit Designprogrammen zu arbeiten.
+B: Habt ihr auch gemeinsam Projekte gemacht?
+A: Ja, wir haben zusammen ein Logo für ein Schulprojekt entworfen. Das hat mir großen Spaß gemacht.
+B: Was schätzt du besonders an deinem Bruder?
+A: Seine Geduld und seine Fähigkeit, andere zu motivieren. Er nimmt sich Zeit, um Dinge zu erklären.
+B: Ist er dein berufliches Vorbild?
+A: Ja, definitiv. Ich möchte auch kreativ arbeiten und Menschen mit meinen Ideen begeistern.
+B: Dann hast du eine klare Richtung für deine Zukunft.
+A: Genau. Und ich bin dankbar, dass ich jemanden habe, der mich unterstützt.`,
+          text_ru: `A: Я хочу рассказать о своем старшем брате. Он сильно повлиял на мой выбор профессии.
+B: Интересно! Кем работает твой брат?
+A: Он графический дизайнер в рекламном агентстве. Еще в детстве он много рисовал и был очень креативным.
+B: А как он повлиял на тебя?
+A: Он показал мне, насколько интересными могут быть творческие профессии. Благодаря ему я начал работать с дизайнерскими программами.
+B: Вы делали совместные проекты?
+A: Да, мы вместе разработали логотип для школьного проекта. Это доставило мне большое удовольствие.
+B: Что ты особенно ценишь в своем брате?
+A: Его терпение и способность мотивировать других. Он всегда находит время, чтобы объяснить.
+B: Он твой профессиональный пример для подражания?
+A: Да, определенно. Я тоже хочу работать творчески и вдохновлять людей своими идеями.
+B: Значит, у тебя есть четкое направление на будущее.
+A: Именно. И я благодарен, что у меня есть человек, который меня поддерживает.`
+        }
+      ]
+    },
+    {
+      id: 'thema5',
+      title_ru: 'Тема 5: Поиск работы в выбранной стране',
+      title_de: 'Thema 5: Arbeitssuche in einem Land Ihrer Wahl',
+      dialogues: [
+        {
+          id: '5a',
+          title_ru: 'A. Поиск работы в Германии',
+          text_de: `A: Ich möchte über die Arbeitssuche in Deutschland sprechen.
+B: Okay. Wie beginnt man dort mit der Jobsuche?
+A: Zuerst sucht man online nach Stellenangeboten – zum Beispiel auf Webseiten wie StepStone oder Indeed.
+B: Und was macht man, wenn man ein interessantes Angebot findet?
+A: Man sollte sich gut über die Firma informieren und dann eine Bewerbung schreiben.
+B: Was gehört zu einer Bewerbung in Deutschland?
+A: Ein Lebenslauf, ein Anschreiben und oft auch Zeugnisse oder Zertifikate.
+B: Und wie läuft der Erstkontakt ab?
+A: Man schickt die Bewerbung per E-Mail oder über ein Online-Formular. Danach bekommt man eine Antwort.
+B: Was passiert, wenn man zum Vorstellungsgespräch eingeladen wird?
+A: Man muss sich gut vorbereiten: über die Firma lesen, Fragen üben und passende Kleidung wählen.
+B: Gibt es Unterschiede zur Arbeitssuche in anderen Ländern?
+A: Ja, in Deutschland ist Pünktlichkeit und Struktur sehr wichtig. Man sollte professionell auftreten.
+B: Danke für die Infos! Das hilft mir bei meiner eigenen Jobsuche.
+A: Gern geschehen. Viel Erfolg!`,
+          text_ru: `A: Я хочу рассказать о поиске работы в Германии.
+B: Хорошо. С чего начинается поиск работы там?
+A: Сначала ищут вакансии онлайн — например, на сайтах вроде StepStone или Indeed.
+B: А что делать, если найдена интересная вакансия?
+A: Нужно хорошо узнать информацию о компании и затем написать заявление.
+B: Что входит в заявление о приеме на работу в Германии?
+A: Резюме, сопроводительное письмо и часто — дипломы или сертификаты.
+B: А как происходит первый контакт?
+A: Заявление отправляется по электронной почте или через онлайн-форму. Затем приходит ответ.
+B: Что происходит, если приглашают на собеседование?
+A: Нужно хорошо подготовиться: прочитать о компании, потренироваться в ответах и выбрать подходящую одежду.
+B: Есть ли отличия от поиска работы в других странах?
+A: Да, в Германии очень важны пунктуальность и структура. Нужно вести себя профессионально.
+B: Спасибо за информацию! Это поможет мне в моем собственном поиске работы.
+A: Пожалуйста. Удачи!`
+        }
+      ]
+    },
+    {
+      id: 'thema6',
+      title_ru: 'Тема 6: На что важно обратить внимание при процессе подачи заявки',
+      title_de: 'Thema 6: Worauf es bei einem Bewerbungsprozess ankommt',
+      dialogues: [
+        {
+          id: '6a',
+          title_ru: 'A. Подготовка к собеседованию',
+          text_de: `A: Ich finde, ein erfolgreicher Bewerbungsprozess beginnt mit einer guten Vorbereitung.
+B: Da stimme ich dir zu. Man sollte sich zuerst über das Unternehmen informieren.
+A: Genau. Man sollte wissen, was die Firma macht, welche Werte sie hat und welche Anforderungen sie stellt.
+B: Und dann kommt der Lebenslauf. Der muss klar und übersichtlich sein.
+A: Ja, und man sollte relevante Erfahrungen und Fähigkeiten betonen.
+B: Was ist mit dem Anschreiben?
+A: Das ist sehr wichtig. Es sollte persönlich sein und zeigen, warum man sich gerade für diese Stelle interessiert.
+B: Ich finde auch, dass man sich gut auf das Vorstellungsgespräch vorbereiten muss.
+A: Absolut. Man sollte typische Fragen üben und sich überlegen, wie man seine Stärken präsentiert.
+B: Und nicht vergessen: Pünktlichkeit und ein gepflegtes Auftreten sind entscheidend.
+A: Genau. Der erste Eindruck zählt.`,
+          text_ru: `A: Я считаю, что успешный процесс подачи заявки начинается с хорошей подготовки.
+B: Согласен с тобой. Сначала нужно узнать информацию о компании.
+A: Именно. Нужно знать, чем занимается фирма, какие у неё ценности и какие требования она предъявляет.
+B: А затем идёт резюме. Оно должно быть чётким и понятным.
+A: Да, и нужно подчеркнуть соответствующий опыт и навыки.
+B: А как насчёт сопроводительного письма?
+A: Это очень важно. Оно должно быть личным и показывать, почему ты заинтересован именно в этой должности.
+B: Я тоже считаю, что нужно хорошо подготовиться к собеседованию.
+A: Абсолютно. Нужно потренироваться в типичных вопросах и подумать, как представить свои сильные стороны.
+B: И не забывать: пунктуальность и аккуратный внешний вид — решающие факторы.
+A: Именно. Первое впечатление имеет значение.`
+        }
+      ]
+    },
+    {
+      id: 'thema7',
+      title_ru: 'Тема 7: Продукт или услуга на ваш выбор',
+      title_de: 'Thema 7: Ein Produkt / eine Dienstleistung Ihrer Wahl',
+      dialogues: [
+        {
+          id: '7a',
+          title_ru: 'A. Беспроводные наушники',
+          text_de: `A: Ich möchte ein Produkt beschreiben, das ich täglich benutze – meine kabellosen Kopfhörer.
+B: Interessant! Was sind die wichtigsten Merkmale?
+A: Sie sind leicht, haben eine gute Klangqualität und eine lange Akkulaufzeit – bis zu 30 Stunden.
+B: Und wie funktioniert die Verbindung?
+A: Über Bluetooth. Die Verbindung ist stabil und funktioniert auch mit mehreren Geräten.
+B: Was ist der Nutzen für die Kunden?
+A: Man kann Musik hören, telefonieren oder Podcasts hören – alles ohne Kabel.
+B: Gibt es auch Nachteile?
+A: Ja, sie sind teurer als kabelgebundene Kopfhörer und man muss sie regelmäßig aufladen.
+B: Wie viel kosten sie ungefähr?
+A: Etwa 120 Euro. Es gibt aber auch günstigere Modelle ab 50 Euro.
+B: Wo kann man sie kaufen?
+A: In Elektronikgeschäften oder online – zum Beispiel bei MediaMarkt oder Amazon.
+B: Ich überlege, mir auch welche zu kaufen.
+A: Ich kann sie wirklich empfehlen – besonders für unterwegs.`,
+          text_ru: `A: Я хочу описать продукт, который использую каждый день — мои беспроводные наушники.
+B: Интересно! Какие основные характеристики?
+A: Они лёгкие, имеют хорошее качество звука и долго держат заряд — до 30 часов.
+B: А как работает подключение?
+A: Через Bluetooth. Подключение стабильное и работает даже с несколькими устройствами.
+B: Какова польза для клиентов?
+A: Можно слушать музыку, разговаривать по телефону или слушать подкасты — всё без проводов.
+B: Есть ли недостатки?
+A: Да, они дороже, чем проводные наушники, и их нужно регулярно заряжать.
+B: Сколько они примерно стоят?
+A: Около 120 евро. Но есть и более дешёвые модели от 50 евро.
+B: Где их можно купить?
+A: В магазинах электроники или онлайн — например, в MediaMarkt или на Amazon.
+B: Я подумываю тоже купить себе такие.
+A: Я действительно могу их порекомендовать — особенно для поездок.`
+        }
+      ]
+    }
+  ];
+
+  // ========== УЛУЧШЕННАЯ СИСТЕМА TTS С GOOGLE ГОЛОСАМИ ==========
+  const useAdvancedTTS = (logger) => {
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [availableVoices, setAvailableVoices] = useState([]);
+    const [selectedVoice, setSelectedVoice] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Определяем мобильное устройство
+    useEffect(() => {
+      const checkMobile = () => {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      };
+      setIsMobile(checkMobile());
+    }, []);
+
+    // Загрузка голосов при инициализации
+    useEffect(() => {
+      loadVoices();
+    }, []);
+
+    // Список Google-голосов для немецкого языка
+    const getGoogleVoices = () => {
+      return [
+        {
+          name: 'Google Deutsch Female',
+          lang: 'de-DE',
+          localService: false,
+          default: false,
+          isGoogle: true,
+          gender: 'female'
+        },
+        {
+          name: 'Google Deutsch',
+          lang: 'de-DE',
+          localService: false,
+          default: false,
+          isGoogle: true,
+          gender: 'neutral'
+        },
+        {
+          name: 'Google Deutsch Male',
+          lang: 'de-DE',
+          localService: false,
+          default: false,
+          isGoogle: true,
+          gender: 'male'
+        }
+      ];
+    };
+
+    const loadVoices = useCallback(() => {
+      return new Promise((resolve) => {
+        const loadSystemVoices = () => {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            processVoices(voices, resolve);
+          } else {
+            // Ждем загрузки голосов
+            window.speechSynthesis.onvoiceschanged = () => {
+              const voices = window.speechSynthesis.getVoices();
+              processVoices(voices, resolve);
+            };
+          }
+        };
+
+        // Для мобильных добавляем задержку
+        if (isMobile) {
+          setTimeout(loadSystemVoices, 1000);
+        } else {
+          loadSystemVoices();
+        }
+      });
+    }, [isMobile, logger]);
+
+    const processVoices = (voices, resolve) => {
+      const germanVoices = voices.filter(voice =>
+        voice.lang.includes('de') || voice.lang.includes('DE') || voice.lang.includes('ger')
+      );
+
+      // Добавляем Google-голоса
+      const googleVoices = getGoogleVoices();
+      const allVoices = [...germanVoices, ...googleVoices];
+
+      // Сортируем голоса: сначала Google женские, потом остальные женские, потом Google, потом остальные
+      const sortedVoices = allVoices.sort((a, b) => {
+        // Google женские голоса - самые приоритетные
+        if (a.isGoogle && a.gender === 'female' && (!b.isGoogle || b.gender !== 'female')) return -1;
+        if (b.isGoogle && b.gender === 'female' && (!a.isGoogle || a.gender !== 'female')) return 1;
+
+        // Женские голоса
+        const aIsFemale = a.gender === 'female' ||
+                         a.name.toLowerCase().includes('female') ||
+                         a.name.toLowerCase().includes('woman') ||
+                         a.name.toLowerCase().includes('anna');
+        const bIsFemale = b.gender === 'female' ||
+                         b.name.toLowerCase().includes('female') ||
+                         b.name.toLowerCase().includes('woman') ||
+                         b.name.toLowerCase().includes('anna');
+
+        if (aIsFemale && !bIsFemale) return -1;
+        if (!aIsFemale && bIsFemale) return 1;
+
+        // Google голоса
+        if (a.isGoogle && !b.isGoogle) return -1;
+        if (!a.isGoogle && b.isGoogle) return 1;
+
+        return a.name.localeCompare(b.name);
+      });
+
+      setAvailableVoices(sortedVoices);
+
+      // Автовыбор лучшего голоса - предпочитаем Google женский
+      const bestVoice = sortedVoices.find(v => v.isGoogle && v.gender === 'female') ||
+                       sortedVoices.find(v => v.gender === 'female') ||
+                       sortedVoices.find(v => v.isGoogle) ||
+                       sortedVoices[0];
+      setSelectedVoice(bestVoice);
+
+      logger.log(`🎤 Устройство: ${isMobile ? 'Мобильное' : 'Десктоп'}, голосов: ${voices.length}, немецких: ${germanVoices.length}`, 'success');
+      if (bestVoice) {
+        logger.log(`🔊 Выбран голос: ${bestVoice.name}`, 'info');
+      }
+
+      resolve(sortedVoices);
+    };
+
+    // Улучшенная функция озвучки
+    const speak = useCallback(async (text) => {
+      if (!text || isSpeaking) return;
+
+      return new Promise((resolve, reject) => {
+        if (!('speechSynthesis' in window)) {
+          reject(new Error("Браузер не поддерживает синтез речи"));
+          return;
+        }
+
+        // Останавливаем предыдущую речь
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'de-DE';
+
+        // Настройки для разных типов голосов
+        if (selectedVoice && selectedVoice.isGoogle) {
+          // Для Google голосов - оптимальные настройки
+          utterance.rate = 0.95;
+          utterance.pitch = 1.05;
+          utterance.volume = 1.0;
+        } else if (isMobile) {
+          utterance.rate = 0.85;
+          utterance.pitch = 1.0;
+          utterance.volume = 0.9;
+        } else {
+          utterance.rate = 0.9;
+          utterance.pitch = 1.1;
+          utterance.volume = 1.0;
+        }
+
+        // Пытаемся использовать выбранный голос, если он реальный
+        if (selectedVoice && !selectedVoice.isGoogle) {
+          utterance.voice = selectedVoice;
+        }
+
+        utterance.onend = () => {
+          logger.log('✅ Озвучка завершена', 'success');
+          setIsSpeaking(false);
+          resolve();
+        };
+
+        utterance.onerror = (event) => {
+          logger.log(`❌ Ошибка озвучки: ${event.error}`, 'error');
+          setIsSpeaking(false);
+          reject(new Error(event.error));
+        };
+
+        utterance.onstart = () => {
+          const voiceInfo = selectedVoice ?
+            (selectedVoice.isGoogle ? ` (${selectedVoice.name})` : ` (${selectedVoice.name})`) :
+            ' (стандартный)';
+          logger.log(`🎵 Озвучка: "${text.substring(0, 20)}..."${voiceInfo}`, 'info');
+        };
+
+        // Для мобильных добавляем небольшую задержку
+        if (isMobile) {
+          setTimeout(() => {
+            setIsSpeaking(true);
+            window.speechSynthesis.speak(utterance);
+          }, 100);
+        } else {
+          setIsSpeaking(true);
+          window.speechSynthesis.speak(utterance);
+        }
+      });
+    }, [selectedVoice, isSpeaking, isMobile, logger]);
+
+    const reloadVoices = useCallback(() => {
+      logger.log('🔄 Перезагрузка голосов...', 'info');
+      if (isMobile) {
+        window.location.reload();
+      } else {
+        loadVoices();
+      }
+    }, [loadVoices, isMobile, logger]);
+
+    return {
+      speak,
+      isSpeaking,
+      availableVoices,
+      selectedVoice,
+      setSelectedVoice,
+      reloadVoices,
+      isMobile
+    };
+  };
+
+  // ========== СИСТЕМА ЛОГИРОВАНИЯ ==========
+  const useLogger = () => {
+    const [logs, setLogs] = useState([]);
+    const [showDebug, setShowDebug] = useState(false);
+
+    const log = useCallback((message, type = 'info') => {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = {
+        id: Date.now() + Math.random(),
+        timestamp,
+        message,
+        type
+      };
+
+      setLogs(prev => [logEntry, ...prev].slice(0, 50));
+
+      console.log(`[${timestamp}] ${message}`);
+    }, []);
+
+    const clearLogs = useCallback(() => {
+      setLogs([]);
+    }, []);
+
+    return {
+      logs,
+      showDebug,
+      setShowDebug,
+      log,
+      clearLogs
+    };
+  };
+
+  // ========== КОМПОНЕНТЫ ==========
+  const Icon = {
+    Volume: (props) => (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+        <path d="M19 5c.4 1.1.5 2.3.5 3.5s-.1 2.4-.5 3.5"/>
+        <path d="M15 9.5c.3.8.5 1.7.5 2.5s-.2 1.7-.5 2.5"/>
+      </svg>
+    ),
+    Loader: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" className="animate-spin" {...props}>
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="31.4" strokeLinecap="round"/>
+      </svg>
+    ),
+    Check: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+    ),
+    Female: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <circle cx="12" cy="4" r="2"/>
+        <path d="M16 22v-4a4 4 0 0 0-4-4h0a4 4 0 0 0-4 4v4"/>
+        <path d="M22 12h-6"/>
+        <path d="M16 8l4-4"/>
+      </svg>
+    ),
+    Refresh: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <path d="M23 4v6h-6"/>
+        <path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    ),
+    Mobile: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+        <line x1="12" y1="18" x2="12" y2="18"/>
+      </svg>
+    ),
+    Google: (props) => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+        <path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81Z"/>
+      </svg>
+    )
+  };
+
+  // Компонент выбора голоса с Google-голосами
+  const VoiceSelector = ({ voices, selectedVoice, onSelectVoice, onReload, isSpeaking, isMobile }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const getVoiceIcon = (voice) => {
+      if (voice.isGoogle) return <Icon.Google className="inline mr-1" />;
+      return null;
+    };
+
+    const getGenderIcon = (voice) => {
+      if (voice.gender === 'female' || voice.name.toLowerCase().includes('female') || voice.name.toLowerCase().includes('anna')) return '👩';
+      if (voice.gender === 'male' || voice.name.toLowerCase().includes('male')) return '👨';
+      return '🧑';
+    };
+
+    return (
+      <div className="card">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold flex items-center gap-2 mobile-small-text">
+            <Icon.Female />
+            Выбор голоса
+            {isMobile && <Icon.Mobile title="Мобильное устройство" />}
+            {isSpeaking && <Icon.Loader className="animate-spin" />}
+          </h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors mobile-button"
+            >
+              {isExpanded ? '▲' : '▼'}
+            </button>
+            <button
+              onClick={onReload}
+              className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors mobile-button"
+              title={isMobile ? "Перезагрузить страницу" : "Обновить голоса"}
+            >
+              <Icon.Refresh size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div className="text-sm text-gray-600 mb-2 mobile-small-text">
+          Текущий: <span className="font-semibold">
+            {selectedVoice?.isGoogle && <Icon.Google className="inline mr-1" />}
+            {selectedVoice?.name || 'Стандартный'}
+          </span>
+          {isMobile && <span className="text-xs text-orange-500 ml-2">📱 Мобильный</span>}
+        </div>
+
+        {isExpanded && (
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {voices.length === 0 ? (
+              <div className="text-gray-500 text-sm">Голоса не найдены</div>
+            ) : (
+              voices.map(voice => (
+                <div
+                  key={voice.name}
+                  className={`voice-option ${selectedVoice?.name === voice.name ? 'selected' : ''} ${
+                    voice.isGoogle ? 'border-2 border-green-200' : ''
+                  }`}
+                  onClick={() => onSelectVoice(voice)}
+                >
+                  <div className="font-medium mobile-small-text flex items-center">
+                    {getVoiceIcon(voice)}
+                    {voice.name}
+                    {voice.isGoogle && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Google</span>}
+                  </div>
+                  <div className="text-sm text-gray-600 mobile-small-text flex items-center justify-between">
+                    <span>
+                      {voice.lang} • {getGenderIcon(voice)}
+                      {voice.gender === 'female' ? ' Женский' :
+                       voice.gender === 'male' ? ' Мужской' : ' Авто'}
+                    </span>
+                    {voice.isGoogle && <span className="text-green-600">🌐</span>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        <div className="mt-3 text-xs text-gray-500 mobile-small-text">
+          {isMobile ?
+            "💡 Выберите Google Deutsch Female для лучшего качества озвучки" :
+            "💡 Google-голоса обычно имеют лучшее качество и естественное звучание"}
+        </div>
+      </div>
+    );
+  };
+
+  // Компонент панели отладки
+  const DebugPanel = ({ logs, onClear, isVisible }) => {
+    if (!isVisible) return null;
+
+    return (
+      <div className="card mt-4">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            Консоль отладки
+          </h3>
+          <button
+            onClick={onClear}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors mobile-button"
+          >
+            Очистить
+          </button>
+        </div>
+
+        <div className="debug-panel">
+          {logs.length === 0 ? (
+            <div className="text-gray-400">Логи отсутствуют</div>
+          ) : (
+            logs.map(log => (
+              <div key={log.id} className={`mb-1 ${getLogClass(log.type)}`}>
+                <span className="text-gray-400 text-xs">[{log.timestamp}]</span> {log.message}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const getLogClass = (type) => {
+    switch (type) {
+      case 'error': return 'log-error';
+      case 'warning': return 'log-warning';
+      case 'success': return 'log-success';
+      case 'info': return 'log-info';
+      default: return 'log-info';
+    }
+  };
+
+  // ГЛАВНЫЙ КОМПОНЕНТ APP
+  function App() {
+    const [view, setView] = useState('schreiben');
+    const [selections, setSelections] = useState({
+      greetings: 101, issue_intro: 201, main_problem: 301, problem_consequence: 401,
+      evidence: 501, resolution_request: 601, closing_formula: 701, sign_off: 801
+    });
+    const [activeTopic, setActiveTopic] = useState(SCHREIBEN_TOPICS[0]);
+    const [senderName, setSenderName] = useState("Max Mustermann");
+    const [invoiceNumber, setInvoiceNumber] = useState("RE-2024-1234");
+    const [activeScenario, setActiveScenario] = useState(SPRECHEN_SCENARIOS[0]);
+    const [activeDialogue, setActiveDialogue] = useState(SPRECHEN_SCENARIOS[0].dialogues[0]);
+    const [progress, setProgress] = useState(0);
+    const [completedSections, setCompletedSections] = useState(new Set());
+
+    // Инициализация систем
+    const logger = useLogger();
+    const tts = useAdvancedTTS(logger);
+    const currentDate = new Date().toLocaleDateString('de-DE');
+
+    // Вспомогательные функции
+    const allPhrases = useMemo(() => Object.values(PHRASES_DATA).flat(), []);
+    const findPhraseById = useCallback((id) => allPhrases.find(p => p.id === id), [allPhrases]);
+
+    const replacePlaceholders = useCallback((text) => {
+      return text ? text.replace(/\[объект жалобы\]/g, activeTopic.de).replace(/\[Дата\]/g, currentDate) : '';
+    }, [activeTopic, currentDate]);
+
+    const assembleLetterWithTranslations = useCallback(() => {
+      const parts = Object.keys(selections).map(key => {
+        const phrase = findPhraseById(selections[key]);
+        if (!phrase) return null;
+
+        const germanText = replacePlaceholders(phrase.text);
+        const russianText = replacePlaceholders(phrase.ru);
+
+        return {
+          german: germanText,
+          russian: russianText
+        };
+      }).filter(Boolean);
+
+      parts.push({
+        german: senderName,
+        russian: senderName
+      });
+
+      return parts;
+    }, [selections, findPhraseById, replacePlaceholders, senderName]);
+
+    const assembleLetter = useCallback(() => {
+      const parts = Object.keys(selections).map(key =>
+        replacePlaceholders(findPhraseById(selections[key])?.text)
+      ).filter(Boolean);
+      return [...parts, senderName].join('\n\n');
+    }, [selections, findPhraseById, replacePlaceholders, senderName]);
+
+    // Расчет прогресса
+    useEffect(() => {
+      const completed = Object.values(selections).filter(Boolean).length;
+      const total = Object.keys(selections).length;
+      setProgress(Math.round((completed / total) * 100));
+
+      const newCompleted = new Set(Object.keys(selections).filter(key => selections[key]));
+      setCompletedSections(newCompleted);
+    }, [selections]);
+
+    // Обработчик озвучки
+    const handleSpeak = async (text) => {
+      try {
+        await tts.speak(text);
+      } catch (err) {
+        logger.log(`❌ Ошибка при озвучке: ${err.message}`, 'error');
+        alert(`Озвучка не работает: ${err.message}`);
+      }
+    };
+
+    // Парсинг диалогов
+    const parseDialogue = useCallback((deText, ruText) => {
+      const deLines = deText.split('\n').filter(l => l.trim());
+      const ruLines = ruText.split('\n').filter(l => l.trim());
+
+      return deLines.map((line, i) => {
+        const speakerMatch = line.match(/^(A:|B:)/);
+        return {
+          id: i,
+          speaker: speakerMatch ? speakerMatch[0] : 'A:',
+          de_text: line.replace(/^(A:|B:)\s*/, ''),
+          ru_text: ruLines[i] ? ruLines[i].replace(/^(A:|B:)\s*/, '') : ''
+        };
+      });
+    }, []);
+
+    const dialogueLines = useMemo(() =>
+      parseDialogue(activeDialogue.text_de, activeDialogue.text_ru),
+      [activeDialogue, parseDialogue]
+    );
+
+    return (
+      <div className="max-w-6xl mx-auto space-y-4 mobile-optimized">
+        {/* Шапка */}
+        <header className="text-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">B2 German Exam Trainer</h1>
+          <p className="text-gray-600 mb-4 text-sm md:text-base">
+            {tts.isMobile ? '📱 Мобильная версия' : '💻 Десктоп версия'} | 🔊 Google TTS
+          </p>
+
+          <div className="flex justify-center gap-1 md:gap-2 mb-4 flex-wrap">
+            <button
+              onClick={() => setView('schreiben')}
+              className={`mobile-button rounded-lg font-semibold transition-colors ${
+                view === 'schreiben' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              📝 Schreiben
+            </button>
+            <button
+              onClick={() => setView('sprechen')}
+              className={`mobile-button rounded-lg font-semibold transition-colors ${
+                view === 'sprechen' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              🗣️ Sprechen
+            </button>
+            <button
+              onClick={() => handleSpeak("Hallo! Ich bin Google Stimme.")}
+              className="mobile-button bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+            >
+              🔊 Тест Google
+            </button>
+            <button
+              onClick={() => logger.setShowDebug(!logger.showDebug)}
+              className={`mobile-button rounded-lg font-semibold transition-colors flex items-center gap-2 ${
+                logger.showDebug ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {logger.showDebug ? '📋' : '🔧'}
+            </button>
+          </div>
+
+          {tts.isSpeaking && (
+            <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-2 rounded mb-4 text-sm">
+              🔊 Озвучка... {tts.selectedVoice?.isGoogle && <Icon.Google className="inline mr-1" />}
+              ({tts.selectedVoice?.name || 'стандартный'})
+            </div>
+          )}
+        </header>
+
+        {/* Селектор голосов */}
+        <VoiceSelector
+          voices={tts.availableVoices}
+          selectedVoice={tts.selectedVoice}
+          onSelectVoice={tts.setSelectedVoice}
+          onReload={tts.reloadVoices}
+          isSpeaking={tts.isSpeaking}
+          isMobile={tts.isMobile}
+        />
+
+        <main className={`grid grid-cols-1 ${view === 'schreiben' ? 'lg:grid-cols-3' : ''} gap-4 md:gap-6 mobile-column`}>
+          {/* Левая колонка - Schreiben */}
+          {view === 'schreiben' && (
+            <div className="lg:col-span-1 space-y-4 md:space-y-6">
+              <div className="card">
+                <h2 className="text-xl font-semibold mb-4">📋 Настройки письма</h2>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Тема жалобы:</label>
+                  <select
+                    value={activeTopic.id}
+                    onChange={(e) => {
+                      const topic = SCHREIBEN_TOPICS.find(t => t.id === e.target.value);
+                      setActiveTopic(topic);
+                      logger.log(`📝 Выбрана тема: ${topic.ru}`, 'info');
+                    }}
+                    className="w-full p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                  >
+                    {SCHREIBEN_TOPICS.map(topic => (
+                      <option key={topic.id} value={topic.id}>
+                        {topic.ru} — {topic.de}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 md:gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Ваше имя:</label>
+                    <input
+                      type="text"
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Номер заказа:</label>
+                    <input
+                      type="text"
+                      value={invoiceNumber}
+                      onChange={(e) => setInvoiceNumber(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Прогресс:</span>
+                    <span className="font-semibold">{progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const newSelections = {};
+                    Object.keys(PHRASES_DATA).forEach(key => {
+                      const phrases = PHRASES_DATA[key];
+                      newSelections[key] = phrases[Math.floor(Math.random() * phrases.length)].id;
+                    });
+                    setSelections(newSelections);
+                    logger.log('🎲 Случайная комбинация', 'success');
+                  }}
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-2 md:py-3 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all text-sm md:text-base"
+                >
+                  🎲 Случайная комбинация
+                </button>
+              </div>
+
+              <div className="card">
+                <h2 className="text-xl font-semibold mb-4">📝 Фразы для письма</h2>
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                  {Object.entries(PHRASES_DATA).map(([category, phrases]) => (
+                    <div key={category} className="border-b border-gray-200 pb-4 last:border-b-0">
+                      <div className="flex items-center mb-2">
+                        <h3 className="font-semibold text-gray-800 text-sm md:text-base">
+                          {category === 'greetings' && '1. Приветствие'}
+                          {category === 'issue_intro' && '2. Введение'}
+                          {category === 'main_problem' && '3. Проблема'}
+                          {category === 'problem_consequence' && '4. Последствия'}
+                          {category === 'evidence' && '5. Документы'}
+                          {category === 'resolution_request' && '6. Решение'}
+                          {category === 'closing_formula' && '7. Заключение'}
+                          {category === 'sign_off' && '8. Подпись'}
+                        </h3>
+                        {completedSections.has(category) && (
+                          <Icon.Check className="ml-2 text-green-600" />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        {phrases.map(phrase => {
+                          const isActive = selections[category] === phrase.id;
+                          return (
+                            <div
+                              key={phrase.id}
+                              className={`p-2 md:p-3 rounded-lg border-2 transition-all ${
+                                isActive
+                                  ? 'border-blue-500 bg-blue-50'
+                                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900 text-sm md:text-base">
+                                    {replacePlaceholders(phrase.text)}
+                                  </div>
+                                  <div className="text-sm text-gray-600 mt-1 italic">
+                                    {phrase.ru}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-2 ml-2">
+                                  <button
+                                    onClick={() => {
+                                      setSelections(prev => ({
+                                        ...prev,
+                                        [category]: phrase.id
+                                      }));
+                                    }}
+                                    className="btn-icon bg-white border border-gray-300 hover:bg-gray-100 transition-colors"
+                                    title="Выбрать"
+                                  >
+                                    <Icon.Check />
+                                  </button>
+                                  <button
+                                    onClick={() => handleSpeak(replacePlaceholders(phrase.text))}
+                                    disabled={tts.isSpeaking}
+                                    className="btn-icon bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                    title="Озвучить"
+                                  >
+                                    {tts.isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Правая колонка */}
+          <div className={`space-y-4 md:space-y-6 ${view === 'schreiben' ? 'lg:col-span-2' : ''}`}>
+
+            {/* Готовое письмо */}
+            {view === 'schreiben' && (
+              <div className="card">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">📄 Готовое письмо</h2>
+                  <div className="text-sm text-gray-600">Дата: {currentDate}</div>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 md:p-4 min-h-[200px] md:min-h-[300px]">
+                  <div className="space-y-3 md:space-y-4">
+                    {assembleLetterWithTranslations().map((part, index) => (
+                      <div key={index} className="border-b border-gray-100 pb-3 md:pb-4 last:border-b-0 last:pb-0">
+                        <div className="text-gray-800 font-sans text-sm md:text-base leading-relaxed mb-2">
+                          {part.german}
+                        </div>
+                        <div className="text-gray-600 italic text-xs md:text-sm pl-3 md:pl-4 border-l-2 border-gray-300">
+                          {part.russian}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 md:gap-3 mt-4 flex-wrap">
+                  <button
+                    onClick={() => {
+                      logger.log('📄 Озвучка письма', 'info');
+                      handleSpeak(assembleLetter());
+                    }}
+                    disabled={tts.isSpeaking}
+                    className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2 text-sm md:text-base"
+                  >
+                    {tts.isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
+                    Озвучить письмо
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(assembleLetter());
+                      logger.log('📋 Письмо скопировано', 'success');
+                      alert('Письмо скопировано!');
+                    }}
+                    className="px-4 md:px-6 py-2 md:py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm md:text-base"
+                  >
+                    📋 Копировать
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sprechen */}
+            {view === 'sprechen' && (
+              <div className="card">
+                <div className="flex justify-between items-center mb-4 md:mb-6">
+                  <h2 className="text-xl md:text-2xl font-semibold">🗣️ Sprechen</h2>
+                  <select
+                    value={activeScenario.id}
+                    onChange={(e) => {
+                      const scenario = SPRECHEN_SCENARIOS.find(s => s.id === e.target.value);
+                      setActiveScenario(scenario);
+                      setActiveDialogue(scenario.dialogues[0]);
+                      logger.log(`🗣️ Тема: ${scenario.title_ru}`, 'info');
+                    }}
+                    className="p-2 md:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm md:text-base"
+                  >
+                    {SPRECHEN_SCENARIOS.map(scenario => (
+                      <option key={scenario.id} value={scenario.id}>
+                        {scenario.title_ru}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-4 md:mb-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800 text-sm md:text-base">
+                    {activeScenario.title_de} — {activeScenario.title_ru}
+                  </h3>
+
+                  <div className="space-y-3 md:space-y-4">
+                    {dialogueLines.map(line => (
+                      <div
+                        key={line.id}
+                        className={`p-3 md:p-4 rounded-lg border-2 ${
+                          line.speaker === 'A:'
+                            ? 'border-blue-200 bg-blue-50'
+                            : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-start gap-2 md:gap-3">
+                              <span className={`font-bold text-sm md:text-base ${
+                                line.speaker === 'A:' ? 'text-blue-600' : 'text-gray-600'
+                              }`}>
+                                {line.speaker}
+                              </span>
+                              <div>
+                                <div className="text-gray-900 font-medium text-sm md:text-base">
+                                  {line.de_text}
+                                </div>
+                                <div className="text-gray-600 italic mt-2 text-xs md:text-sm">
+                                  {line.ru_text}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              logger.log(`🎤 Озвучка реплики`, 'info');
+                              handleSpeak(line.de_text);
+                            }}
+                            disabled={tts.isSpeaking}
+                            className="btn-icon bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors ml-2 md:ml-4"
+                            title="Озвучить"
+                          >
+                            {tts.isSpeaking ? <Icon.Loader /> : <Icon.Volume />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* Панель отладки */}
+        <DebugPanel
+          logs={logger.logs}
+          onClear={logger.clearLogs}
+          isVisible={logger.showDebug}
+        />
+
+        <footer className="text-center text-gray-500 text-xs md:text-sm mt-6 md:mt-8 pt-3 md:pt-4 border-t border-gray-200">
+          <p>B2 German Exam Trainer — {tts.isMobile ? '📱 Мобильная' : '💻 Десктоп'} версия | 🔊 Google TTS</p>
+        </footer>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
