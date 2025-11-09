@@ -89,111 +89,46 @@
   <script type="text/babel">
   const { useState, useEffect, useMemo, useCallback } = React;
 
-  // ========== ИСПРАВЛЕННЫЕ ДАННЫЕ ==========
+   // ========== ДАННЫЕ ==========
   const SCHREIBEN_TOPICS = [
-    { id: 'produkt', ru: '1. Товар (дефект)' },
-    { id: 'service', ru: '2. Услуга (обслуживание)', de: 'Ihres Internetanschlusses' },
-    { id: 'kurs', ru: '3. Курс/Школа (недостатки)', de: 'des Deutsch B2-Kurses' },
-    { id: 'reise', ru: '4. Путешествие/Отель (недостатки)', de: 'des gebuchten Hotelzimmers' },
-    { id: 'wohnung', ru: '5. Дефект в квартире', de: 'der Heizungsanlage in meiner Wohnung' },
-    { id: 'rechnung', ru: '6. Счет/Договор (ошибка)', de: 'meiner letzten Rechnung' },
-    { id: 'transport', ru: '7. Транспорт (задержка/проблема)', de: 'der Bahnverbindung nach Berlin' },
+    { id: 'produkt', ru: '1. Товар (дефект)', de: 'der neue Staubsauger' },
+    { id: 'service', ru: '2. Услуга (обслуживание)', de: 'Ihr Internetanschluss' },
+    { id: 'kurs', ru: '3. Курс/Школа (недостатки)', de: 'der Deutsch B2-Kurs' },
+    { id: 'reise', ru: '4. Путешествие/Отель (недостатки)', de: 'das gebuchte Hotelzimmer' },
+    { id: 'wohnung', ru: '5. Дефект в квартире', de: 'die Heizungsanlage in meiner Wohnung' },
+    { id: 'rechnung', ru: '6. Счет/Договор (ошибка)', de: 'meine letzte Rechnung' },
+    { id: 'transport', ru: '7. Транспорт (задержка/проблема)', de: 'die Bahnverbindung nach Berlin' },
   ];
 
   const PHRASES_DATA = {
-    greetings: [
-      { 
-        id: 101, 
-        text: "Sehr geehrte Damen und Herren,", 
-        ru: "Уважаемые дамы и господа,", 
-        tip: "Формальное обращение" 
-      }
+    greetings: [ 
+      { id: 101, text: "Sehr geehrte Damen und Herren,", ru: "Уважаемые дамы и господа,", tip: "Формальное обращение" }
     ],
     issue_intro: [
-      { 
-        id: 201, 
-        text: "ich schreibe Ihnen bezüglich [объект жалобы].", 
-        ru: "я пишу Вам по поводу [объект жалобы].", 
-        tip: "bezüglich + Genitiv" 
-      },
-      { 
-        id: 202, 
-        text: "Ich beziehe mich auf unsere Bestellung vom [Дата].", 
-        ru: "Я ссылаюсь на наш заказ от [Дата].", 
-        tip: "sich beziehen auf + Akk" 
-      }
+      { id: 201, text: "Ich schreibe Ihnen bezüglich [объект жалобы].", ru: "Я пишу Вам по поводу [объект жалобы].", tip: "bezüglich + Genitiv" },
+      { id: 202, text: "Ich beziehe mich auf unsere Bestellung/Vereinbarung vom [Дата].", ru: "Я ссылаюсь на наш заказ/соглашение от [Дата].", tip: "sich beziehen auf + Akk" }
     ],
     main_problem: [
-      { 
-        id: 301, 
-        text: "Leider muss ich Ihnen mitteilen, dass der Artikel nicht der Beschreibung entspricht.", 
-        ru: "К сожалению, я должен сообщить Вам, что товар не соответствует описанию.", 
-        tip: "Придаточное предложение с dass" 
-      },
-      { 
-        id: 302, 
-        text: "Der Hauptgrund für meine Beschwerde sind erhebliche Mängel.", 
-        ru: "Основная причина моей жалобы — существенные недостатки.", 
-        tip: "Mängel — недостатки" 
-      }
+      { id: 301, text: "Leider muss ich Ihnen mitteilen, dass [объект жалобы] nicht der Beschreibung entspricht.", ru: "К сожалению, должен сообщить Вам, что [объект жалобы] не соответствует описанию.", tip: "Придаточное с dass" },
+      { id: 302, text: "Der Hauptgrund für meine Beschwerde ist, dass es Mängel gibt.", ru: "Основная причина моей жалобы - наличие недостатков.", tip: "Mängel — недостатки" }
     ],
     problem_consequence: [
-      { 
-        id: 401, 
-        text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", 
-        ru: "Из-за этой проблемы я не смог выполнить свою работу, как планировал.", 
-        tip: "Aufgrund + Genitiv" 
-      },
-      { 
-        id: 402, 
-        text: "Dies hat bei mir zu erheblichen Unannehmlichkeiten geführt.", 
-        ru: "Это привело к значительным неудобствам.", 
-        tip: "zu Unannehmlichkeiten führen" 
-      }
+      { id: 401, text: "Aufgrund dieses Problems konnte ich meine Arbeit nicht wie geplant durchführen.", ru: "Из-за этой проблемы я не смог выполнить свою работу как планировалось.", tip: "Aufgrund + Genitiv" },
+      { id: 402, text: "Das hat bei mir zu großem Ärger und Unannehmlichkeiten geführt.", ru: "Это привело к большому раздражению и неудобствам с моей стороны.", tip: "zu Ärger führen" }
     ],
     evidence: [
-      { 
-        id: 501, 
-        text: "Ich habe Ihnen alle notwendigen Unterlagen beigefügt.", 
-        ru: "Я приложил(а) все необходимые документы.", 
-        tip: "beifügen — прилагать" 
-      },
-      { 
-        id: 502, 
-        text: "Ich bitte Sie, die Angelegenheit innerhalb von 14 Tagen zu klären.", 
-        ru: "Я прошу Вас решить этот вопрос в течение 14 дней.", 
-        tip: "Infinitivkonstruktion" 
-      }
+      { id: 501, text: "Ich habe Ihnen alle notwendigen Unterlagen in der Anlage beigefügt.", ru: "Я приложил(а) все необходимые документы в приложении.", tip: "beifügen — прилагать" },
+      { id: 502, text: "Ich möchte Sie bitten, die Angelegenheit innerhalb von 14 Tagen zu klären.", ru: "Я хотел(а) бы попросить Вас урегулировать этот вопрос в течение 14 дней.", tip: "Infinitivkonstruktion" }
     ],
     resolution_request: [
-      { 
-        id: 601, 
-        text: "Daher bitte ich Sie höflichst um eine umgehende Lösung.", 
-        ru: "Поэтому я вежливо прошу Вас о немедленном решении.", 
-        tip: "Daher — поэтому" 
-      },
-      { 
-        id: 602, 
-        text: "Falls eine Reparatur nicht möglich ist, erwarte ich eine vollständige Rückerstattung.", 
-        ru: "Если ремонт невозможен, я ожидаю полного возврата средств.", 
-        tip: "Falls = если" 
-      }
+      { id: 601, text: "Daher bitte ich Sie höflich um eine schnelle Lösung und um Ersatz.", ru: "Поэтому я вежливо прошу Вас о быстром решении и замене.", tip: "Daher — поэтому" },
+      { id: 602, text: "Falls dies nicht möglich ist, erwarte ich die volle Rückerstattung des Kaufpreises.", ru: "Если это невозможно, я ожидаю полного возврата стоимости покупки.", tip: "Falls = если" }
     ],
-    closing_formula: [
-      { 
-        id: 701, 
-        text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine baldige Klärung.", 
-        ru: "Благодарю Вас за Ваши усилия и надеюсь на скорое решение.", 
-        tip: "Стандартная формула" 
-      }
+    closing_formula: [ 
+      { id: 701, text: "Ich danke Ihnen für Ihre Mühe und hoffe auf eine schnelle Klärung.", ru: "Благодарю Вас за Ваши усилия и надеюсь на быстрое урегулирование.", tip: "Стандартная формула" }
     ],
-    sign_off: [
-      { 
-        id: 801, 
-        text: "Mit freundlichen Grüßen", 
-        ru: "С уважением", 
-        tip: "Подпись" 
-      }
+    sign_off: [ 
+      { id: 801, text: "Mit freundlichen Grüßen,", ru: "С уважением,", tip: "Подпись" }
     ],
   };
 
